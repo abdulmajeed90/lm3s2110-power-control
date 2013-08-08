@@ -1,2 +1,5 @@
 The project is a power control.
-The MCU is lm3s811.
+The MCU is lm3s2110.
+LCD is nokia 5110.
+Output SPWM.
+Follow wave.
