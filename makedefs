@@ -73,9 +73,10 @@ ifeq (${COMPILER}, gcc)
 # Get the prefix for the tools to use.  Use arm-none-eabi if it exists,
 # otherwise fall back to arm-stellaris-eabi.
 #
-PREFIX=${shell type arm-stellaris-eabi-gcc > /dev/null 2>&1 && \
-         echo arm-stellaris-eabi || echo arm-none-eabi}
+#PREFIX=${shell type arm-stellaris-eabi-gcc > /dev/null 2>&1 && \
+#         echo arm-stellaris-eabi || echo arm-none-eabi}
 #PREFIX=arm-cortexm3-eabi
+PREFIX=arm-luminary-eabi
 
 #
 # The command for calling the compiler.
@@ -145,8 +146,8 @@ LIBGCC=${shell ${CC} ${CFLAGS} -print-libgcc-file-name}
 #
 # Get the location of libc.a from the GCC front-end.
 #
-#LIBC=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
-LIBC=./lib/libc.a
+LIBC=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
+#LIBC=./lib/libc.a
 
 #
 # The command for extracting images from the linked executables.

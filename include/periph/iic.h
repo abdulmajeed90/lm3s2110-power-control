@@ -1,11 +1,11 @@
 #ifndef __IIC_H__
 #define __IIC_H__
 
-#define IIC_PERIPH	SYSCTL_PERIPH_GPIOC
-#define IIC_PORT	GPIO_PORTC_BASE
+#define IIC_PERIPH	SYSCTL_PERIPH_GPIOD
+#define IIC_PORT	GPIO_PORTD_BASE
 
-#define IIC_SDA		GPIO_PIN_7
 #define IIC_CLK		GPIO_PIN_6
+#define IIC_SDA		GPIO_PIN_7
 
 #define IIC_CLK_B	GPIO_PIN_4
 #define IIC_SDA_B	GPIO_PIN_5

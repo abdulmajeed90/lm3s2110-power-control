@@ -29,22 +29,43 @@ void ads_confige(unsigned int channel)
 	unsigned char i=0;
 	unsigned char Initdata[4]={0};
 
+/* 	switch (channel) {
+ * 		case 0:
+ * 			Initdata[2] = 0xc2;
+ * 			break;
+ * 		case 1:
+ * 			Initdata[2] = 0xd2;
+ * 			break;
+ * 		case 2:
+ * 			Initdata[2] = 0xe2;
+ * 			break;
+ * 		case 3:
+ * 			Initdata[2] = 0xf2;
+ * 			break;
+ * 		default:
+ * 			break;
+ * 	}
+ */
+
 	switch (channel) {
 		case 0:
-			Initdata[2] = 0xc2;
+			Initdata[2] = 0xcc;
 			break;
 		case 1:
-			Initdata[2] = 0xd2;
+			Initdata[2] = 0xdc;
 			break;
 		case 2:
-			Initdata[2] = 0xe2;
+			Initdata[2] = 0xec;
 			break;
 		case 3:
-			Initdata[2] = 0xf2;
+			Initdata[2] = 0xfc;
 			break;
 		default:
 			break;
 	}
+
+
+
 
 	/* address and write command */
 	Initdata[0] =0x90;
@@ -54,8 +75,7 @@ void ads_confige(unsigned int channel)
 	/* Initdata[3] =0x03; // 配置字低字节 */
 
 	start();
-	for(i=0;i<4;i++)
-	{
+	for(i=0;i<4;i++) {
 		Send1byte(Initdata[i]);
 	}
 

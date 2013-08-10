@@ -83,7 +83,8 @@ $(PACKETNAME).tar.bz2:
 
 cscope:
 	ctags -R
-	cscope -RqkbvI /opt/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/include/
+	cscope -RqkbvI /usr/local/arm/luminary/arm-luminary-eabi/include
+#cscope -RqkbvI /opt/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/include/
 #
 # The rule to create the target directory.
 #

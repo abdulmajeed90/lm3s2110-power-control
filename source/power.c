@@ -18,8 +18,8 @@
 #define MODULE_LCD
 /* #define MODULE_PWM */
 #define MODULE_PLL
-/* #define MODULE_ADS */
-/* #define MODULE_CAP */
+#define MODULE_ADS
+#define MODULE_CAP
 /* #define MODULE_DAC_5618 */
 /* #define MODULE_BUTTON */
 
@@ -153,20 +153,23 @@ __error__(char *pcFilename, unsigned long ulLine)
 
 /* jtag_wait() - wait for JTAG pin. protect the JTAG
  */
+#define JTAG_WAIT_PERIPH	SYSCTL_PERIPH_GPIOB
+#define JTAG_WAIT_BASE		GPIO_PORTB_BASE
+#define JTAG_WAIT_PIN		GPIO_PIN_0
 void jtag_wait(void)
 {
 	/* enable key GPIO */
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+	SysCtlPeripheralEnable(JTAG_WAIT_PERIPH);
 	/* write 1 to PIN */
-    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0, 1);
+    GPIOPinTypeGPIOOutput(JTAG_WAIT_BASE, JTAG_WAIT_PIN);
+    GPIOPinWrite(JTAG_WAIT_BASE, JTAG_WAIT_PIN, 0xff);
 	/* set key GPIO is input */
-	GPIOPinTypeGPIOInput(GPIO_PORTF_BASE, GPIO_PIN_0);
+	GPIOPinTypeGPIOInput(JTAG_WAIT_BASE, JTAG_WAIT_PIN);
 	/* if press button while rest */
-	if (GPIOPinRead(GPIO_PORTF_BASE, GPIO_PIN_0) == 0)
+	if (GPIOPinRead(JTAG_WAIT_BASE, JTAG_WAIT_PIN) == 0)
 		for (;;);
 	/* disable key GPIO */
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+	SysCtlPeripheralEnable(JTAG_WAIT_PERIPH);
 }
 
 
@@ -228,7 +231,7 @@ int main(void)
 		char string[30];
 
 #ifdef MODULE_ADS
-		unsigned int ads_value;
+		unsigned short ads_value;
 		for (i=0; i<3; i++) {
 			for (j = 10; j; j--)
 				ads_value = ads_read(i);
@@ -245,13 +248,15 @@ int main(void)
 			tmp1 = (tmp1 + timer_cap[count]) >> 1;
 
  		sprintf(string, "CAP: %6ld", tmp1);
-		menu_add_string(i, string);
+		menu_add_string(i++, string);
 
 		for (tmp2 = timer_cap[1], count=3; count<TIMER_VALUE_DEEPIN; count+=2)
 			tmp2 = (tmp2 + timer_cap[count]) >> 1;
 
  		sprintf(string, "CAP: %6ld", tmp2);
-		menu_add_string(j, string);
+		menu_add_string(i, string);
+		
+		i=0;
 
 		/* load value to follower wave */
 		timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2) >> 1;

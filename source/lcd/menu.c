@@ -11,6 +11,7 @@
 #include "wave.h"
 
 unsigned char frame_buffer[FRAME_BUFFER_ROW_MAX][FRAME_BUFFER_COLUMN_MAX];
+
 frame_buffer_t fb;
 unsigned int fb_place=0;
 
@@ -20,10 +21,11 @@ unsigned int fb_place=0;
  */
 void menu_start(void)
 {
-
-	/*
-	unsigned char *frame_buffer;
- 	frame_buffer = (unsigned char *)malloc((sizeof (unsigned char)) * FRAME_BUFFER_ROW_MAX * FRAME_BUFFER_COLUMN_MAX); */
+/* 
+ * 	unsigned char *frame_buffer;
+ * 	unsigned long lenght = FRAME_BUFFER_ROW_MAX*FRAME_BUFFER_COLUMN_MAX;
+ *  	frame_buffer = (unsigned char *)malloc((sizeof (unsigned char)) * lenght);
+ */
 
 	/* initial LCD */
 	fb.fb = (unsigned char *)frame_buffer;
@@ -42,7 +44,7 @@ void menu_end(void)
 /*  menu_roll - roll the display to screen
  *  return now screen.
 */
-extern unsigned char pwm_step;
+extern unsigned char spwm_step;
 extern unsigned int spwm_voltage;
 int menu_roll(int screen)
 {
@@ -74,7 +76,7 @@ int menu_roll(int screen)
 		now_screen--;
 	}
 	/* set pwm counter step */
-	/* pwm_step = (now_screen+1) * 4; */
+	/* spwm_step = (now_screen+1) * 4; */
 	/* 	wave_spwm_load(now_screen * 0x100 + 5800); */
 	wave_spwm_data(now_screen+1);
 

@@ -23,8 +23,9 @@
 
 unsigned char spwm_a[1024];
 unsigned char spwm_b[1024];
-/* unsigned char pwm_step=12; */
-unsigned char pwm_step=24;
+/* unsigned char spwm_step=12; */
+/* unsigned char spwm_step=24; */
+unsigned char spwm_step=50;
 unsigned char spwm_value=0xf;
 unsigned char spwm_flag=0;
 unsigned int spwm_count_u=10;
@@ -63,11 +64,11 @@ void time_spwm_handler(void)
 
 	if (wave_flag) {
 		spwm_value=spwm_a[i]+0x1;
-		i+=pwm_step;
+		i+=spwm_step;
 		spwm_flag=1;
 	} else {
 		spwm_value=spwm_b[j]+0x1;
-		j+=pwm_step;
+		j+=spwm_step;
 		spwm_flag=0;
 	}
 
