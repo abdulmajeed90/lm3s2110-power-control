@@ -17,16 +17,23 @@
 unsigned int result_gd=0;
 
 
+/* ads_init - initialize ADC
+ */
+void ads_init(void)
+{
+	iic_sys_init();
+}		/* -----  end of function ads_init  ----- */
+
 void ads_confige(unsigned int channel)
 {
-#if 1
+	/*
 	SysCtlPeripheralEnable(IIC_PERIPH);
 	SDA_Out;
 	SCL_Out;
 	SCL_H;
 	SDA_H;
+	*/
 
-	unsigned char i=0;
 	unsigned char Initdata[4]={0};
 
 /* 	switch (channel) {
@@ -74,18 +81,21 @@ void ads_confige(unsigned int channel)
 	Initdata[3] =0xe3;
 	/* Initdata[3] =0x03; // 配置字低字节 */
 
+#if 0
+	unsigned char i=0;
 	start();
 	for(i=0;i<4;i++) {
 		Send1byte(Initdata[i]);
 	}
 
 	stop();
+#else
+	iic_write(Initdata[0], &Initdata[1], 3);
 #endif
 }
 
 void ads_point_reg(void)
 {
-	unsigned char i=0;
 	unsigned char Initdata[4]={0};
 
 	/* address and write command */
@@ -93,6 +103,8 @@ void ads_point_reg(void)
 	/* point register */
 	Initdata[1] =0x00;
 
+#if 0
+	unsigned char i=0;
 	SDA_OUT;
 	start();
 	for(i=0;i<2;i++)
@@ -103,11 +115,15 @@ void ads_point_reg(void)
 	/* IIC_write(Initdata, 0, 16); */
 
 	stop();
+#else
+	iic_write(Initdata[0], &Initdata[1], 1);
+#endif
 }
 
 unsigned int ads_read(unsigned int channel)
 {
 	unsigned short int result=0;
+	unsigned char tmp[2];
 
 	if (channel > 4)
 		channel = 0;
@@ -119,11 +135,17 @@ unsigned int ads_read(unsigned int channel)
 
 	/* delay_ads(100); */
 
+#if 0
 	start();
 	Send1byte(0x91); //地址+读
 	result|=ADSGetByte()<<8;
 	result|=ADSGetByte();
 	stop();
+#else
+	iic_read(0x91, tmp, 2);
+	result |= tmp[0] << 8;
+	result |= tmp[1];
+#endif
 	return result;
 }
 

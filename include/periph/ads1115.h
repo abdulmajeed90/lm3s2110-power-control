@@ -1,5 +1,5 @@
-#ifndef __ADS8361_H__
-#define __ADS8361_H__
+#ifndef __ADS1115_H__
+#define __ADS1115_H__
 
 /* #define ADS_PERIPH	SYSCTL_PERIPH_GPIOA */
 #define ADS_PORT	GPIO_PORTA_BASE
@@ -30,7 +30,7 @@
 #define ADS_SA_READ	(GPIOPinRead(ADS_PORT, ADS_SA) & ADS_SA)
 #define ADS_DRDY_READ	(GPIOPinRead(ADS_PORT, ADS_DRDY) & ADS_DRDY)
 
-void ads_init_gpio(void);
+extern void ads_init(void);
 unsigned int ads_read(unsigned int port);
 
 void ads_confige(unsigned int channel);
@@ -38,4 +38,4 @@ void ads_point_reg(void);
 unsigned int ads_read(unsigned int channel);
 
 
-#endif /* __ADS8361_H__ */
+#endif /* __ADS1115_H__ */

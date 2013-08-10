@@ -14,12 +14,12 @@
 #include "src/gpio.h"
 
 /* module */
-#define MODULE_SPWM
+/* #define MODULE_SPWM */
 #define MODULE_LCD
 /* #define MODULE_PWM */
 #define MODULE_PLL
 #define MODULE_ADS
-#define MODULE_CAP
+/* #define MODULE_CAP */
 /* #define MODULE_DAC_5618 */
 /* #define MODULE_BUTTON */
 
@@ -177,6 +177,8 @@ int main(void)
 {
 	unsigned int count=0;
 	unsigned long tmp1, tmp2;
+	int i=0, j=1;
+	char string[30];
 
 	jtag_wait();
 
@@ -197,6 +199,8 @@ int main(void)
 
 #ifdef MODULE_LCD
 	menu_start();
+	/* the initialize data start at 3 row */
+	i=2;
 #endif
 
 #ifdef MODULE_BUTTON
@@ -205,16 +209,40 @@ int main(void)
 #ifdef MODULE_SPWM
 #include "src/pwm.h"
 	wave_spwm();
+#ifdef MODULE_LCD
+	sprintf(string, "spwm started.");
+	menu_add_string(i++, string);
+	menu_refresh();
+#endif
 #endif
 
 #ifdef MODULE_CAP
 /* 	wave_capture(timer_capture_handler); */
 	wave_cap32(timer_cap32_handler);
 	wave_interrupt_init(0xffff, timer_interrupt_handler);
+#ifdef MODULE_LCD
+	sprintf(string, "capture started.");
+	menu_add_string(i++, string);
+	menu_refresh();
+#endif
+#endif
+
+#ifdef MODULE_ADS
+	ads_init();
+#ifdef MODULE_LCD
+	sprintf(string, "ads started.");
+	menu_add_string(i++, string);
+	menu_refresh();
+#endif
 #endif
 
 	/* enable systerm interrupt */
  	IntMasterEnable();
+#ifdef MODULE_LCD
+	sprintf(string, "all interrupt started.");
+	menu_add_string(i++, string);
+	menu_refresh();
+#endif
 
 #ifdef MODULE_DAC_5618
 	DAC_write_data(0x1ff, 1);
@@ -227,8 +255,6 @@ int main(void)
 
 	while(1) {
 #ifdef MODULE_LCD
-		int i=0, j=1;
-		char string[30];
 
 #ifdef MODULE_ADS
 		unsigned short ads_value;

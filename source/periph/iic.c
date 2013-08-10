@@ -6,6 +6,7 @@
 #include "src/gpio.h"
 #include "src/i2c.h"
 #include "src/interrupt.h"
+#include "src/pin_map.h"
 
 #include "periph/iic.h"
 
@@ -139,432 +140,185 @@ unsigned char ADSGetByteB()
 }
 
 
-
-/* init_iic() - initialize IIC module
-*/
-void SYS_init_iic(void)
+IIC_t iic_status;
+void iic_handler(void)
 {
-	/* enable IIC GPIO */
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-	/* enable IIC module */
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C1);
-	/* enable IIC pin */
-	GPIOPinTypeI2C(GPIO_PORTA_BASE, I2C_SCL|I2C_SDA);
-	/* configure IIC speed 100kbps */
-	I2CMasterInit(I2C1_MASTER_BASE, false);
-	/* enable master interrupt */
-	IntMasterEnable();
-	/* enable IIC interrupt */
-	IntEnable(INT_I2C1);
-	/* enable IIC module interrupt */
-	I2CMasterIntEnable(I2C1_MASTER_BASE);
+	/* Clear the I2C interrupt. */
+	I2CMasterIntClear(I2C0_MASTER_BASE);
+
+	/* Determine what to do based on the current state */
+	switch(iic_status.status) {
+		case STATE_IDLE: /* The idle state */
+			/* There is nothing to be done */
+			break;
+
+		case STATE_WRITE_NEXT: /* The state for the middle of a burst write */
+			/* Write the next byte to the data register */
+			I2CMasterDataPut(I2C0_MASTER_BASE, *iic_status.pdat++);
+			iic_status.count--;
+			/* Continue the burst write */
+			I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_BURST_SEND_CONT);
+			/* If there is one byte left, set the next state to the final write
+			 * state */
+			if (iic_status.count == 1) {
+				iic_status.status = STATE_WRITE_FINAL;
+			}
+			break;
+
+		case STATE_WRITE_FINAL: /* The state for the final write of a burst sequence */
+			/* Write the final byte to the data register */
+			I2CMasterDataPut(I2C0_MASTER_BASE, *iic_status.pdat++);
+			iic_status.count--;
+			/* Finish the burst write */
+			I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_BURST_SEND_FINISH);
+			/* The next state is to wait for the burst write to complete */
+			iic_status.status = STATE_SEND_ACK;
+			break;
+
+		case STATE_WAIT_ACK: /* Wait for an ACK on the read after a write */
+			/* See if there was an error on the previously issued read */
+			if (I2CMasterErr(I2C0_MASTER_BASE) == I2C_MASTER_ERR_NONE) {
+				/* Read the byte received */
+				I2CMasterDataGet(I2C0_MASTER_BASE);
+				/* There was no error, so the state machine is now idle */
+				iic_status.status = STATE_IDLE;
+				break;
+			}
+			/* Fall through to STATE_SEND_ACK */
+
+		case STATE_SEND_ACK: /* Send a read request, looking for the ACK to indicate
+							  * that the write is done */
+			/* Put the I2C master into receive mode */
+			I2CMasterSlaveAddrSet(I2C0_MASTER_BASE, 0x50, true);
+			/* Perform a single byte read */
+			I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
+			/* The next state is the wait for the ack */
+			iic_status.status = STATE_WAIT_ACK;
+			break;
+
+		case STATE_READ_ONE: /* The state for a single byte read */
+			/* Put the I2C master into receive mode */
+			I2CMasterSlaveAddrSet(I2C0_MASTER_BASE, 0x50, true);
+			/* Perform a single byte read */
+			I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
+			/* The next state is the wait for final read state */
+			iic_status.status = STATE_READ_WAIT;
+			break;
+
+		case STATE_READ_FIRST: /* The state for the start of a burst read */
+			/* Put the I2C master into receive mode */
+			I2CMasterSlaveAddrSet(I2C0_MASTER_BASE, 0x50, true);
+			/* Start the burst receive */
+			I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_BURST_RECEIVE_START);
+			/* The next state is the middle of the burst read */
+			iic_status.status = STATE_READ_NEXT;
+			break;
+
+		case STATE_READ_NEXT: /* The state for the middle of a burst read */
+			/* Read the received character */
+			*iic_status.pdat++ = I2CMasterDataGet(I2C0_MASTER_BASE);
+			iic_status.count--;
+			/* Continue the burst read */
+			I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_BURST_RECEIVE_CONT);
+			/* If there are two characters left to be read, make the next
+			 * state be the end of burst read state */
+			if (iic_status.count == 2) {
+				iic_status.status = STATE_READ_FINAL;
+			}
+			break;
+
+		case STATE_READ_FINAL: /* The state for the end of a burst read */
+			/* Read the received character */
+			*iic_status.pdat++ = I2CMasterDataGet(I2C0_MASTER_BASE);
+			iic_status.count--;
+			/* Finish the burst read */
+			I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_BURST_RECEIVE_FINISH);
+			/* The next state is the wait for final read state */
+			iic_status.status = STATE_READ_WAIT;
+			break;
+
+		case STATE_READ_WAIT: /* This state is for the final read of a single or burst read */
+			/* Read the received character */
+			*iic_status.pdat++ = I2CMasterDataGet(I2C0_MASTER_BASE);
+			iic_status.count--;
+			/* The state machine is now idle */
+			iic_status.status = STATE_IDLE;
+			break;
+
+		default:break;
+	}
 }
 
-#if 1
-
-/*
- *
- * The states in the interrupt handler state machine.
+/* iic_sys_init - initialize the system IIC module
  */
-#define STATE_IDLE         0
-#define STATE_WRITE_NEXT   1
-#define STATE_WRITE_FINAL  2
-#define STATE_WAIT_ACK     3
-#define STATE_SEND_ACK     4
-#define STATE_READ_ONE     5
-#define STATE_READ_FIRST   6
-#define STATE_READ_NEXT    7
-#define STATE_READ_FINAL   8
-#define STATE_READ_WAIT    9
+void iic_sys_init(void)
+{
+	/* Enable IIC module */
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C0);
+	/* Enable IIC GPIO */
+	SysCtlPeripheralEnable(I2C0SCL_PERIPH);
+	SysCtlPeripheralEnable(I2C0SDA_PERIPH);
+	/* Enable IIC pin */
+	GPIOPinTypeI2C(I2C0SCL_PORT, I2C0SCL_PIN);
+	GPIOPinTypeI2C(I2C0SDA_PORT, I2C0SDA_PIN);
+	/* Configure IIC speed 100kbps */
+	/* I2CMasterInit(I2C1_MASTER_BASE, false); */
+	/* Initialize the I2C master */
+	I2CMasterInitExpClk(I2C0_MASTER_BASE, SysCtlClockGet(), false);
+	/* Register IIC interrupt handler */
+	I2CIntRegister(I2C0_MASTER_BASE, iic_handler);
+	/* I2CIntRegister(I2C0_SLAVE_BASE, iic_handler); */
+	/* Enable IIC interrupt */
+	IntEnable(INT_I2C0);
+	/* Enable IIC module interrupt */
+	I2CMasterIntEnable(I2C0_MASTER_BASE);
+}		/* -----  end of function iic_sys_init  ----- */
 
-/*
- * The variables that track the data to be transmitted or received.
+
+/* iic_read - read data from IIC bus
  */
-static unsigned char *g_pucData = 0;
-static unsigned long g_ulCount = 0;
-
-static volatile unsigned long g_ulState = STATE_IDLE;
-
-//*****************************************************************************
-//
-// The I2C interrupt handler.
-//
-//*****************************************************************************
-void
-I2CIntHandler(void)
+void iic_read(unsigned long address, unsigned char *dat, unsigned long count)
 {
-    //
-    // Clear the I2C interrupt.
-    //
-    I2CMasterIntClear(I2C1_MASTER_BASE);
+	/* Configure iic status structure */
+	iic_status.pdat = dat;
+	iic_status.count = count;
+	if (count != 1) {
+		iic_status.status = STATE_READ_ONE;
+	} else {
+		iic_status.status = STATE_READ_FIRST;
+	}
 
-    //
-    // Determine what to do based on the current state.
-    //
-    switch(g_ulState)
-    {
-        //
-        // The idle state.
-        //
-        case STATE_IDLE:
-        {
-            //
-            // There is nothing to be done.
-            //
-            break;
-        }
+	/* Set the master address will place on the bus */
+	I2CMasterSlaveAddrSet(I2C0_MASTER_BASE, 0x50 | (address >> 8), false);
+	/* Place the address to be written in the data register */
+	I2CMasterDataPut(I2C0_MASTER_BASE, address);
+	/* Perform a single send, writing the address as the only byte */
+	I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_SINGLE_SEND);
+	/* Wait until the I2C interrupt state machine is idle */
+	while(iic_status.status != STATE_IDLE) {
+	};
+}		/* -----  end of function iic_read  ----- */
 
-        //
-        // The state for the middle of a burst write.
-        //
-        case STATE_WRITE_NEXT:
-        {
-            //
-            // Write the next byte to the data register.
-            //
-            I2CMasterDataPut(I2C1_MASTER_BASE, *g_pucData++);
-            g_ulCount--;
-
-            //
-            // Continue the burst write.
-            //
-            I2CMasterControl(I2C1_MASTER_BASE, I2C_MASTER_CMD_BURST_SEND_CONT);
-
-            //
-            // If there is one byte left, set the next state to the final write
-            // state.
-            //
-            if(g_ulCount == 1)
-            {
-                g_ulState = STATE_WRITE_FINAL;
-            }
-
-            //
-            // This state is done.
-            //
-            break;
-        }
-
-        //
-        // The state for the final write of a burst sequence.
-        //
-        case STATE_WRITE_FINAL:
-        {
-            //
-            // Write the final byte to the data register.
-            //
-            I2CMasterDataPut(I2C1_MASTER_BASE, *g_pucData++);
-            g_ulCount--;
-
-            //
-            // Finish the burst write.
-            //
-            I2CMasterControl(I2C1_MASTER_BASE,
-                             I2C_MASTER_CMD_BURST_SEND_FINISH);
-
-            //
-            // The next state is to wait for the burst write to complete.
-            //
-            g_ulState = STATE_SEND_ACK;
-
-            //
-            // This state is done.
-            //
-            break;
-        }
-
-        //
-        // Wait for an ACK on the read after a write.
-        //
-        case STATE_WAIT_ACK:
-        {
-            //
-            // See if there was an error on the previously issued read.
-            //
-            if(I2CMasterErr(I2C1_MASTER_BASE) == I2C_MASTER_ERR_NONE)
-            {
-                //
-                // Read the byte received.
-                //
-                I2CMasterDataGet(I2C1_MASTER_BASE);
-
-                //
-                // There was no error, so the state machine is now idle.
-                //
-                g_ulState = STATE_IDLE;
-
-                //
-                // This state is done.
-                //
-                break;
-            }
-
-            //
-            // Fall through to STATE_SEND_ACK.
-            //
-        }
-
-        //
-        // Send a read request, looking for the ACK to indicate that the write
-        // is done.
-        //
-        case STATE_SEND_ACK:
-        {
-            //
-            // Put the I2C master into receive mode.
-            //
-            I2CMasterSlaveAddrSet(I2C1_MASTER_BASE, 0x50, true);
-
-            //
-            // Perform a single byte read.
-            //
-            I2CMasterControl(I2C1_MASTER_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
-
-            //
-            // The next state is the wait for the ack.
-            //
-            g_ulState = STATE_WAIT_ACK;
-
-            //
-            // This state is done.
-            //
-            break;
-        }
-
-        //
-        // The state for a single byte read.
-        //
-        case STATE_READ_ONE:
-        {
-            //
-            // Put the I2C master into receive mode.
-            //
-            I2CMasterSlaveAddrSet(I2C1_MASTER_BASE, 0x50, true);
-
-            //
-            // Perform a single byte read.
-            //
-            I2CMasterControl(I2C1_MASTER_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
-
-            //
-            // The next state is the wait for final read state.
-            //
-            g_ulState = STATE_READ_WAIT;
-
-            //
-            // This state is done.
-            //
-            break;
-        }
-
-        //
-        // The state for the start of a burst read.
-        //
-        case STATE_READ_FIRST:
-        {
-            //
-            // Put the I2C master into receive mode.
-            //
-            I2CMasterSlaveAddrSet(I2C1_MASTER_BASE, 0x50, true);
-
-            //
-            // Start the burst receive.
-            //
-            I2CMasterControl(I2C1_MASTER_BASE,
-                             I2C_MASTER_CMD_BURST_RECEIVE_START);
-
-            //
-            // The next state is the middle of the burst read.
-            //
-            g_ulState = STATE_READ_NEXT;
-
-            //
-            // This state is done.
-            //
-            break;
-        }
-
-        //
-        // The state for the middle of a burst read.
-        //
-        case STATE_READ_NEXT:
-        {
-            //
-            // Read the received character.
-            //
-            *g_pucData++ = I2CMasterDataGet(I2C1_MASTER_BASE);
-            g_ulCount--;
-
-            //
-            // Continue the burst read.
-            //
-            I2CMasterControl(I2C1_MASTER_BASE,
-                             I2C_MASTER_CMD_BURST_RECEIVE_CONT);
-
-            //
-            // If there are two characters left to be read, make the next
-            // state be the end of burst read state.
-            //
-            if(g_ulCount == 2)
-            {
-                g_ulState = STATE_READ_FINAL;
-            }
-
-            //
-            // This state is done.
-            //
-            break;
-        }
-
-        //
-        // The state for the end of a burst read.
-        //
-        case STATE_READ_FINAL:
-        {
-            //
-            // Read the received character.
-            //
-            *g_pucData++ = I2CMasterDataGet(I2C1_MASTER_BASE);
-            g_ulCount--;
-
-            //
-            // Finish the burst read.
-            //
-            I2CMasterControl(I2C1_MASTER_BASE,
-                             I2C_MASTER_CMD_BURST_RECEIVE_FINISH);
-
-            //
-            // The next state is the wait for final read state.
-            //
-            g_ulState = STATE_READ_WAIT;
-
-            //
-            // This state is done.
-            //
-            break;
-        }
-
-        //
-        // This state is for the final read of a single or burst read.
-        //
-        case STATE_READ_WAIT:
-        {
-            //
-            // Read the received character.
-            //
-            *g_pucData++  = I2CMasterDataGet(I2C1_MASTER_BASE);
-            g_ulCount--;
-
-            //
-            // The state machine is now idle.
-            //
-            g_ulState = STATE_IDLE;
-
-            //
-            // This state is done.
-            //
-            break;
-        }
-    }
-}
-
-
-/*
- *
- * Write to the Atmel device.
-*/
-
-void IIC_write(unsigned char *pucData, unsigned long ulOffset,
-           unsigned long ulCount)
+/* iic_write - write data to IIC bus
+ */
+void iic_write(unsigned long address, unsigned char *dat, unsigned long count)
 {
-    //
-    // Save the data buffer to be written.
-    //
-    g_pucData = pucData;
-    g_ulCount = ulCount;
+	/* Configure iic status structure */
+	iic_status.pdat = dat;
+	iic_status.count = count;
+	if (count != 1) {
+		iic_status.status = STATE_WRITE_NEXT;
+	} else {
+		iic_status.status = STATE_WRITE_FINAL;
+	}
+	/* Set the slave address will place on the bus */
+	I2CMasterSlaveAddrSet(I2C0_MASTER_BASE, 0x50 | (address >> 8), false);
+	/* Place the address to be written in the data register */
+	I2CMasterDataPut(I2C0_MASTER_BASE, address);
+	/* Start the burst cycle, writing the address as the first byte */
+	I2CMasterControl(I2C0_MASTER_BASE, I2C_MASTER_CMD_BURST_SEND_START);
+	/* Wait until the I2C interrupt state machine is idle. */
+	while(iic_status.status != STATE_IDLE) {
+	}
+}		/* -----  end of function iic_write  ----- */
 
-    //
-    // Set the next state of the interrupt state machine based on the number of
-    // bytes to write.
-    //
-    if(ulCount != 1)
-    {
-        g_ulState = STATE_WRITE_NEXT;
-    }
-    else
-    {
-        g_ulState = STATE_WRITE_FINAL;
-    }
-
-    //
-    // Set the slave address and setup for a transmit operation.
-    //
-    I2CMasterSlaveAddrSet(I2C1_MASTER_BASE, 0x50 | (ulOffset >> 8), false);
-
-    //
-    // Place the address to be written in the data register.
-    //
-    I2CMasterDataPut(I2C1_MASTER_BASE, ulOffset);
-
-    //
-    // Start the burst cycle, writing the address as the first byte.
-    //
-    I2CMasterControl(I2C1_MASTER_BASE, I2C_MASTER_CMD_BURST_SEND_START);
-
-    //
-    // Wait until the I2C interrupt state machine is idle.
-    //
-    /* while(g_ulState != STATE_IDLE) */
-    {
-    }
-}
-
-/*
- *
- * Read from the Atmel device.
-*/
-void IIC_read(unsigned char *pucData, unsigned long ulOffset,
-          unsigned long ulCount)
-{
-    //
-    // Save the data buffer to be read.
-    //
-    g_pucData = pucData;
-    g_ulCount = ulCount;
-
-    //
-    // Set the next state of the interrupt state machine based on the number of
-    // bytes to read.
-    //
-    if(ulCount == 1)
-    {
-        g_ulState = STATE_READ_ONE;
-    }
-    else
-    {
-        g_ulState = STATE_READ_FIRST;
-    }
-
-    //
-    // Start with a dummy write to get the address set in the EEPROM.
-    //
-    I2CMasterSlaveAddrSet(I2C1_MASTER_BASE, 0x50 | (ulOffset >> 8), false);
-
-    //
-    // Place the address to be written in the data register.
-    //
-    I2CMasterDataPut(I2C1_MASTER_BASE, ulOffset);
-
-    //
-    // Perform a single send, writing the address as the only byte.
-    //
-    I2CMasterControl(I2C1_MASTER_BASE, I2C_MASTER_CMD_SINGLE_SEND);
-
-    //
-    // Wait until the I2C interrupt state machine is idle.
-    //
-    /* while(g_ulState != STATE_IDLE) */
-    {
-    }
-}
-#endif

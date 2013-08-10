@@ -29,7 +29,6 @@
 
 
 
-#if 1
 #define SCL_H		GPIOPinWrite(IIC_PORT, IIC_CLK, 0xff)
 #define SCL_L		GPIOPinWrite(IIC_PORT, IIC_CLK, 0x00)
 
@@ -43,38 +42,13 @@
 #define SDA_In		GPIOPinTypeGPIOInput(IIC_PORT, IIC_SDA)
 #define SDA_Out		GPIOPinTypeGPIOOutput(IIC_PORT, IIC_SDA)
 
-#else
-
-#define SCL_H
-#define SCL_L
-
-#define SDA_H
-#define SDA_L
-
-#define SDA_READ	1
-
-
-#define SCL_Out
-#define SDA_In
-#define SDA_Out
-
-#endif
-
 
 #define SDA_IN	SDA_In
 #define SDA_OUT	SDA_Out
 
 
-// 定义I2C总线管脚名称
-#define I2C_SCL     GPIO_PIN_6
-#define I2C_SDA     GPIO_PIN_7
 
 
-// 定义I2C工作状态
-#define STAT_IDLE           0           /* 空闲状态         */
-#define STAT_RECEIVE_START  2           /* 起始接收数据状态 */
-#define STAT_RECEIVE_CONT   3           /* 继续接收数据状态 */
-#define STAT_RECEIVE_LAST   4           /* 最后接收数据状态 */
 
 // 定义LM75A相关名称
 #define SLA_LM75A       (0x90>>1)
@@ -96,5 +70,27 @@ void stopB();
 void Send1byteB(unsigned int  byte);
 unsigned char ADSGetByteB();
 
+/* The states in the interrupt handler state machine */
+#define STATE_IDLE         0
+#define STATE_WRITE_NEXT   1
+#define STATE_WRITE_FINAL  2
+#define STATE_WAIT_ACK     3
+#define STATE_SEND_ACK     4
+#define STATE_READ_ONE     5
+#define STATE_READ_FIRST   6
+#define STATE_READ_NEXT    7
+#define STATE_READ_FINAL   8
+#define STATE_READ_WAIT    9
+
+/* IIC status struct */
+typedef struct {
+	unsigned long status;
+	unsigned long count;
+	unsigned char *pdat;
+} IIC_t;
+
+extern void iic_sys_init(void);
+extern void iic_read(unsigned long address, unsigned char *dat, unsigned long count);
+extern void iic_write(unsigned long address, unsigned char *dat, unsigned long count);
 
 #endif /* __IIC_H__ */

@@ -56,9 +56,9 @@ int display_roll(frame_buffer_t *frame_buffer, int place, int roll, int dirction
 	int i = place;
 
 	/* display button interrupt count */
-	sprintf(title, "button count:%d", button_count);
-	fb_write_char(5,0,title, fb, column_max); 
-
+	/* 	sprintf(title, "button count:%d", button_count);
+	 * 	fb_write_char(5,0,title, fb, column_max); 
+	 */
 	/* roll left */
 	if (dirction) {
 		while (i<place+roll) {
