@@ -58,17 +58,16 @@
 // 定义命令：先重复起始，再接收1字节数据，最后停止
 #define I2CM_CMD_PSR    (I2C_MASTER_CS_STOP | I2C_MASTER_CS_START | I2C_MASTER_CS_RUN)
 
-void start();
-void stop();
-void Send1byte(unsigned int  byte);
-unsigned int Read1byte();
-unsigned char ADSGetByte();
-
-
-void startB();
-void stopB();
-void Send1byteB(unsigned int  byte);
-unsigned char ADSGetByteB();
+extern void start();
+extern void stop();
+extern void Send1byte(unsigned int  byte);
+extern unsigned int Read1byte();
+extern unsigned char ADSGetByte();
+extern void startB();
+extern void stopB();
+extern void Send1byteB(unsigned int  byte);
+extern unsigned char ADSGetByteB();
+extern unsigned int ads_read_count(unsigned int count);
 
 /* The states in the interrupt handler state machine */
 #define STATE_IDLE         0

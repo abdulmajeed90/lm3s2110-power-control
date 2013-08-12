@@ -76,6 +76,7 @@ ifeq (${COMPILER}, gcc)
 #PREFIX=${shell type arm-stellaris-eabi-gcc > /dev/null 2>&1 && \
 #         echo arm-stellaris-eabi || echo arm-none-eabi}
 #PREFIX=arm-cortexm3-eabi
+#PREFIX=arm-none-eabi
 PREFIX=arm-luminary-eabi
 
 #

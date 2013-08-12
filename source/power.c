@@ -14,18 +14,26 @@
 #include "src/gpio.h"
 
 /* module */
-/* #define MODULE_SPWM */
+#define MODULE_SPWM
 #define MODULE_LCD
 /* #define MODULE_PWM */
 #define MODULE_PLL
 #define MODULE_ADS
-/* #define MODULE_CAP */
+#define MODULE_CAP
 /* #define MODULE_DAC_5618 */
 /* #define MODULE_BUTTON */
 
 
 #ifdef MODULE_ADS
 #include "periph/ads1115.h"
+
+#define ads_a1	1538
+#define ads_a2	20270000
+#define ads_current(x)	(((x)*ads_a1 - ads_a2)/10000)
+
+#define ads_v1	1384
+#define ads_v2	3055
+#define ads_voltage(x)	(((x)*ads_v1 + ads_v2)/1000)
 #endif
 
 #ifdef MODULE_LCD
@@ -177,7 +185,7 @@ int main(void)
 {
 	unsigned int count=0;
 	unsigned long tmp1, tmp2;
-	int i=0, j=1;
+	int i=0;
 	char string[30];
 
 	jtag_wait();
@@ -242,6 +250,8 @@ int main(void)
 	sprintf(string, "all interrupt started.");
 	menu_add_string(i++, string);
 	menu_refresh();
+
+	menu_clean_page();
 #endif
 
 #ifdef MODULE_DAC_5618
@@ -255,18 +265,40 @@ int main(void)
 
 	while(1) {
 #ifdef MODULE_LCD
+		/* The memu display counter clean */
+		i = 0;
 
 #ifdef MODULE_ADS
-		unsigned short ads_value;
-		for (i=0; i<3; i++) {
-			for (j = 10; j; j--)
-				ads_value = ads_read(i);
+		unsigned int ads_value;
+		/* ADS channel 1 */
+		for (count = 10; count; count--)
+			ads_value = ads_read(0);
 
-			sprintf(string, "ADC%d: %6d", i,  ads_value);
-			menu_add_string(i, string);
-		}
+		sprintf(string, "ADC1: %6d", ads_value);
+		menu_add_string(i++, string);
 
+		/* ADS channel 2 */
+		for (count = 10; count; count--)
+			ads_value = ads_read(1);
 
+		ads_value = ads_voltage(ads_value);
+		sprintf(string, "voltage:%2d.%3dV", ads_value/1000, ads_value%1000);
+		menu_add_string(i++, string);
+
+		/* ADS channel 1 */
+		for (count = 10; count; count--)
+			ads_value = ads_read(2);
+
+		ads_value = ads_current(ads_value);
+		sprintf(string, "corrent:%1d.%3dA", ads_value/1000, ads_value%1000);
+		menu_add_string(i++, string);
+		
+		/* ADS channel 1 */
+		for (count = 10; count; count--)
+			ads_value = ads_read(3);
+
+		sprintf(string, "ADC4: %6d", ads_value);
+		menu_add_string(i++, string);
 #endif
 
 #ifdef MODULE_CAP
@@ -282,8 +314,6 @@ int main(void)
  		sprintf(string, "CAP: %6ld", tmp2);
 		menu_add_string(i, string);
 		
-		i=0;
-
 		/* load value to follower wave */
 		timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2) >> 1;
 		timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2) >> 1;

@@ -13,4 +13,5 @@ extern int menu_roll(int screen);
 extern int menu_refresh(void);
 extern void menu_end(void);
 extern void menu_add_string(int num, const char *string);
+extern void menu_clean_page(void);
 #endif /* __MENU_H__ */

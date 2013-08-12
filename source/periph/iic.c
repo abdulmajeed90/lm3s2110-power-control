@@ -76,6 +76,34 @@ unsigned char ADSGetByte()
 	return temp;
 }
 
+/* unsigned char Read1byte() */
+unsigned int ads_read_count(unsigned int count)
+{
+	unsigned char i=0;
+
+	unsigned int temp=0;
+	SDA_In;
+	for(i=0;i<count;i++)
+	{
+		temp=temp<<1;
+		SCL_L;
+		SCL_H;
+		if(SDA_READ)
+		{
+			temp|=0x01;
+		}
+
+	}
+	SDA_Out;
+	SCL_L;
+	SDA_L;
+	SCL_H;
+	SCL_L;
+	SDA_H;
+	return temp;
+}
+
+
 
 void startB()
 {       

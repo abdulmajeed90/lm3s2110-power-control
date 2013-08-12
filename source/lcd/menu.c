@@ -48,8 +48,8 @@ extern unsigned char spwm_step;
 extern unsigned int spwm_voltage;
 int menu_roll(int screen)
 {
-	static int now_screen=0;
 	static int fb_place = 0;
+	static int now_screen=0;
 
 	/* refresh screen */
 	if (screen == now_screen) {
@@ -150,3 +150,10 @@ void menu_add_string(int num, const char *string)
 
 	display_add_string(&fb, x, y, string);
 }		/* -----  end of function menu_add_string  ----- */
+
+/* menu_clean_page - clean now screen
+ */
+void menu_clean_page(void)
+{
+	display_boxes(&fb, fb_place, 0, 84, 48);
+}		/* -----  end of function menu_clean_page  ----- */
