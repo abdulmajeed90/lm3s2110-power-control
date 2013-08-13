@@ -8,10 +8,7 @@
 #include "src/sysctl.h"
 #include "src/gpio.h"
 #include "periph/lcd_5110.h"
-
-#define delay_ms(a)	SysCtlDelay((a) * (SysCtlClockGet() / 3000));
-#define delay_us(a)	SysCtlDelay((a) * (SysCtlClockGet() / 3));
-
+#include "delay.h"
 
 /* LCD_init_gpio() - initialize LCD gpio
  */

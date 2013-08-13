@@ -38,10 +38,11 @@ VERSION=1
 SUBLEVEL=1
 PACKETNAME=$(PART)-$(NAME)-$(VERSION).$(SUBLEVEL)
 
+DEBUG=1
+
 #
 # The base directory for DriverLib.
 #
-#ROOT=../../..
 ROOT=.
 
 #
@@ -68,6 +69,7 @@ all: ${COMPILER}/power.axf
 #
 clean:
 	@rm -rf ${COMPILER} ${wildcard *~}
+	@cd ./tools;make clean
 
 distclean:
 	@rm -rf ${COMPILER} ${wildcard *~} tags cscope.* *.vim vim.*
@@ -76,11 +78,16 @@ dist: $(PACKETNAME).tar.bz2
 $(PACKETNAME).tar.bz2:
 	-rm -rf $(PACKETNAME)
 	mkdir $(PACKETNAME)
+	make distclean
 	-cp * -R $(PACKETNAME)
 	tar jcvf $@ $(PACKETNAME)
 	-rm -rf $(PACKETNAME)
 
-
+#
+# Other build
+#
+tools:
+	cd tools;make
 cscope:
 	ctags -R
 	cscope -RqkbvI /usr/local/arm/luminary/arm-luminary-eabi/include
@@ -113,15 +120,18 @@ ${COMPILER}/power.axf: ${COMPILER}/menu.o
 ${COMPILER}/power.axf: ${COMPILER}/wave.o
 ${COMPILER}/power.axf: ${COMPILER}/iic.o
 ${COMPILER}/power.axf: ${COMPILER}/ads1115.o
+${COMPILER}/power.axf: ${COMPILER}/infrared.o
 
-# ${COMPILER}/power.axf: ${COMPILER}/button.o
-# ${COMPILER}/power.axf: ${COMPILER}/menu.o
-# ${COMPILER}/power.axf: ${COMPILER}/wave.o
 #
 # power source end
 #
 #${COMPILER}/power.axf: ${ROOT}/src/${COMPILER}/libdriver.a
+ifdef DEBUG
 ${COMPILER}/power.axf: ${ROOT}/lib/libdriver.a
+else
+${COMPILER}/power.axf: ${ROOT}/lib/libdriver-nodebug.a
+endif
+
 ifeq (${COMPILER}, gcc)
 ${COMPILER}/power.axf: power.ld
 endif

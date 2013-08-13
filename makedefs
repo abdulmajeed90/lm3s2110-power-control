@@ -108,7 +108,7 @@ CFLAGS=-mthumb         \
        -Wall           \
        -pedantic       \
        -DPART_${PART}  \
-       -c	\
+       -c              \
        -I./include     
 
 
@@ -156,12 +156,17 @@ LIBC=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
 OBJCOPY=${PREFIX}-objcopy
 
 #
+# Debug and downloader
+#
+GDB=${PREFIX}-gdb
+
+#
 # Tell the compiler to include debugging information if the DEBUG environment
 # variable is set.
 #
-#ifdef DEBUG
+ifdef DEBUG
 CFLAGS+=-g -D DEBUG
-#endif
+endif
 
 #
 # Add the tool specific CFLAGS.
@@ -242,6 +247,9 @@ ${COMPILER}/%.axf:
 	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
 	      '${LIBC}' '${LIBGCC}'
 	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
-#for gdb
+# For gdb
 	cp ${@}${LNK_SCP} ../gdb
+# Download
+	${GDB} -ex 'target remote localhost:3333' -ex 'mon reset' -ex 'mon halt' -ex 'load' -ex 'mon reset' -ex 'q' -ex 'y' -nw ${@}${LNK_SCP}
+	
 endif

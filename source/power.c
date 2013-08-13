@@ -271,37 +271,40 @@ int main(void)
 #ifdef MODULE_ADS
 		unsigned int ads_value;
 		/* ADS channel 1 */
-		for (count = 10; count; count--)
-			ads_value = ads_read(0);
-
-		sprintf(string, "ADC1: %6d", ads_value);
-		menu_add_string(i++, string);
-
+/* 		for (count = 10; count; count--)
+ * 			ads_value = ads_read(0);
+ * 
+ * 		sprintf(string, "ADC1: %6d", ads_value);
+ * 		menu_add_string(i++, string);
+ * 
+ */
 		/* ADS channel 2 */
-		for (count = 10; count; count--)
+		for (count = 5; count; count--)
 			ads_value = ads_read(1);
 
 		ads_value = ads_voltage(ads_value);
-		sprintf(string, "voltage:%2d.%3dV", ads_value/1000, ads_value%1000);
+		sprintf(string, "voltage:%d.%dV ", ads_value/1000, ads_value%1000);
 		menu_add_string(i++, string);
 
 		/* ADS channel 1 */
-		for (count = 10; count; count--)
+		for (count = 5; count; count--)
 			ads_value = ads_read(2);
 
 		ads_value = ads_current(ads_value);
-		sprintf(string, "corrent:%1d.%3dA", ads_value/1000, ads_value%1000);
+		sprintf(string, "corrent:%d.%dA  ", ads_value/1000, ads_value%1000);
 		menu_add_string(i++, string);
 		
 		/* ADS channel 1 */
-		for (count = 10; count; count--)
-			ads_value = ads_read(3);
-
-		sprintf(string, "ADC4: %6d", ads_value);
-		menu_add_string(i++, string);
+/* 		for (count = 10; count; count--)
+ * 			ads_value = ads_read(3);
+ * 
+ * 		sprintf(string, "ADC4: %6d", ads_value);
+ * 		menu_add_string(i++, string);
+ */
 #endif
 
 #ifdef MODULE_CAP
+		/* Get the capture average */
 		for (tmp1 = timer_cap[0], count=2; count<TIMER_VALUE_DEEPIN; count+=2)
 			tmp1 = (tmp1 + timer_cap[count]) >> 1;
 
@@ -312,7 +315,7 @@ int main(void)
 			tmp2 = (tmp2 + timer_cap[count]) >> 1;
 
  		sprintf(string, "CAP: %6ld", tmp2);
-		menu_add_string(i, string);
+		menu_add_string(i++, string);
 		
 		/* load value to follower wave */
 		timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2) >> 1;

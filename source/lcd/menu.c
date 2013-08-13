@@ -6,9 +6,12 @@
  *  Copyright (c) 2013, chenchacha
  */
 #include <stdlib.h>
+#include <stdio.h>
 #include "lcd/display.h"
 #include "periph/button.h"
+#include "periph/infrared.h"
 #include "wave.h"
+#include "lcd/menu.h"
 
 unsigned char frame_buffer[FRAME_BUFFER_ROW_MAX][FRAME_BUFFER_COLUMN_MAX];
 
@@ -33,7 +36,10 @@ void menu_start(void)
 	display_start(&fb);
 
 	/* initial button */
-	button_init_gpio();
+	/* button_init_gpio(); */
+	
+	/* infrared initialize */
+	infrared_init();
 }		/* -----  end of function menu_start  ----- */
 
 void menu_end(void)
@@ -86,6 +92,7 @@ int menu_roll(int screen)
 /*  menu_refresh - refresh the display with button
 */
 extern volatile unsigned int gpio_b_int_status;
+extern volatile unsigned int infrared_flag;
 int menu_refresh(void)
 {
 	static int screen = 0;
@@ -130,6 +137,19 @@ int menu_refresh(void)
 		}
 		gpio_b_int_status = 0;
 	}
+
+	/* Get and display infrared value */
+	char string[10];
+	volatile unsigned char *infrared;
+/* 	if (infrared_flag == 1) {
+ */
+		infrared = infrared_value();
+		infrared_flag=0;
+
+		sprintf(string, "%3d,%3d,%3d,%3d", infrared[0],infrared[1],infrared[2],infrared[3]);
+		menu_add_string(5, string);
+/* 	}
+ */
 
 	menu_roll(screen);
 

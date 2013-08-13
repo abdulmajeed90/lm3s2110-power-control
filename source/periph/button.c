@@ -11,7 +11,7 @@
 #include "src/pin_map.h"
 
 
-extern void GPIO_B_routine(void);
+extern void GPIO_routine(void);
 /* button_init_gpio() - initilize GPIO for button
  */
 void button_init_gpio(void)
@@ -30,10 +30,10 @@ void button_init_gpio(void)
 /*     GPIOPinWrite(BUTTON_PORT, BUTTON_MASK, BUTTON_MASK); */
 
 	/* register the interrupt handler */
-	GPIOPortIntRegister(BUTTON_PORT, GPIO_B_routine);
+	GPIOPortIntRegister(BUTTON_PORT, GPIO_routine);
 	/* enable the pin interrupt */
-/* 	GPIOPinIntEnable(BUTTON_PORT, BUTTON_MASK); */
-	GPIOPinIntEnable(BUTTON_PORT, BUTTON_4);
+ 	GPIOPinIntEnable(BUTTON_PORT, BUTTON_MASK);
+/* 	GPIOPinIntEnable(BUTTON_PORT, BUTTON_4); */
 	IntPrioritySet(BUTTON_INT, 1);
 	/* enable the port interrupt */
 	IntEnable(BUTTON_INT);
@@ -48,7 +48,7 @@ unsigned char button_test(unsigned char button)
  */
 volatile unsigned int gpio_b_int_status;
 volatile unsigned int button_count = 0;
-void GPIO_B_routine(void)
+void GPIO_routine(void)
 {
 	unsigned int status;
 	status = GPIOPinIntStatus(BUTTON_PORT, true);
