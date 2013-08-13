@@ -57,6 +57,7 @@ VPATH +=${ROOT}/source
 VPATH +=${ROOT}/source/lcd
 VPATH +=${ROOT}/source/periph
 VPATH +=${ROOT}/source/system
+VPATH +=${ROOT}/source/calculation
 
 #
 # The default rule, which causes the power example to be built.
@@ -121,6 +122,7 @@ ${COMPILER}/power.axf: ${COMPILER}/wave.o
 ${COMPILER}/power.axf: ${COMPILER}/iic.o
 ${COMPILER}/power.axf: ${COMPILER}/ads1115.o
 ${COMPILER}/power.axf: ${COMPILER}/infrared.o
+${COMPILER}/power.axf: ${COMPILER}/pid.o
 
 #
 # power source end

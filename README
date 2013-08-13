@@ -1,5 +1,8 @@
 The project is a power control.
 The MCU is lm3s2110.
+
 LCD is nokia 5110.
-Output SPWM.
-Follow wave.
+ADC is ads1115
+
+Follow wave and output a spwm.
+Output a given the frequency and amplitude SPWM.
