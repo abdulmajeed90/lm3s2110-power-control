@@ -185,12 +185,9 @@ int main(void)
 {
 	unsigned int count=0;
 	unsigned long tmp1, tmp2;
-	int i=0;
-	char string[30];
+	/* int i=0; */
 
 	jtag_wait();
-
-
 
 #ifdef MODULE_PLL
 	/* set LDO in 2.75v */
@@ -207,8 +204,6 @@ int main(void)
 
 #ifdef MODULE_LCD
 	menu_start();
-	/* the initialize data start at 3 row */
-	i=2;
 #endif
 
 #ifdef MODULE_BUTTON
@@ -217,42 +212,20 @@ int main(void)
 #ifdef MODULE_SPWM
 #include "src/pwm.h"
 	wave_spwm();
-#ifdef MODULE_LCD
-	sprintf(string, "spwm started.");
-	menu_add_string(i++, string);
-	menu_refresh();
-#endif
 #endif
 
 #ifdef MODULE_CAP
 /* 	wave_capture(timer_capture_handler); */
 	wave_cap32(timer_cap32_handler);
 	wave_interrupt_init(0xffff, timer_interrupt_handler);
-#ifdef MODULE_LCD
-	sprintf(string, "capture started.");
-	menu_add_string(i++, string);
-	menu_refresh();
-#endif
 #endif
 
 #ifdef MODULE_ADS
 	ads_init();
-#ifdef MODULE_LCD
-	sprintf(string, "ads started.");
-	menu_add_string(i++, string);
-	menu_refresh();
-#endif
 #endif
 
 	/* enable systerm interrupt */
  	IntMasterEnable();
-#ifdef MODULE_LCD
-	sprintf(string, "all interrupt started.");
-	menu_add_string(i++, string);
-	menu_refresh();
-
-	menu_clean_page();
-#endif
 
 #ifdef MODULE_DAC_5618
 	DAC_write_data(0x1ff, 1);
@@ -265,34 +238,26 @@ int main(void)
 
 	while(1) {
 #ifdef MODULE_LCD
-		/* The memu display counter clean */
-		i = 0;
+ 		menu_clean_now();
 
 #ifdef MODULE_ADS
 		unsigned int ads_value;
-		/* ADS channel 1 */
-/* 		for (count = 10; count; count--)
- * 			ads_value = ads_read(0);
- * 
- * 		sprintf(string, "ADC1: %6d", ads_value);
- * 		menu_add_string(i++, string);
- * 
- */
+		MENU_PARAMETER_t menu_para;
+
 		/* ADS channel 2 */
 		for (count = 5; count; count--)
 			ads_value = ads_read(1);
 
-		ads_value = ads_voltage(ads_value);
-		sprintf(string, "voltage:%d.%dV ", ads_value/1000, ads_value%1000);
-		menu_add_string(i++, string);
+		menu_para.voltage = ads_voltage(ads_value);
 
 		/* ADS channel 1 */
 		for (count = 5; count; count--)
 			ads_value = ads_read(2);
 
-		ads_value = ads_current(ads_value);
-		sprintf(string, "corrent:%d.%dA  ", ads_value/1000, ads_value%1000);
-		menu_add_string(i++, string);
+		menu_para.current = ads_current(ads_value);
+
+		/* display the page */
+		menu_parameter_page(1, &menu_para);
 		
 		/* ADS channel 1 */
 /* 		for (count = 10; count; count--)
@@ -308,18 +273,25 @@ int main(void)
 		for (tmp1 = timer_cap[0], count=2; count<TIMER_VALUE_DEEPIN; count+=2)
 			tmp1 = (tmp1 + timer_cap[count]) >> 1;
 
+		/*
  		sprintf(string, "CAP: %6ld", tmp1);
 		menu_add_string(i++, string);
+		*/
 
 		for (tmp2 = timer_cap[1], count=3; count<TIMER_VALUE_DEEPIN; count+=2)
 			tmp2 = (tmp2 + timer_cap[count]) >> 1;
 
+		/* 
  		sprintf(string, "CAP: %6ld", tmp2);
 		menu_add_string(i++, string);
+		*/
 		
+		MENU_WAVE_t menu_wave;
 		/* load value to follower wave */
-		timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2) >> 1;
-		timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2) >> 1;
+		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2) >> 1;
+		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2) >> 1;
+
+		menu_wave_page(2, &menu_wave);
 #ifdef MODULE_SPWM
 		/* Sync spwm period with input */
 		/* 		wave_spwm_load((tmp1+tmp2)/85); */

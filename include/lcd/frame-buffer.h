@@ -10,8 +10,10 @@
 
 extern void fb_write_char(int row, int column, const char *ptrc, unsigned char *frame_buffer, int column_max);
 extern void fb_write_point(int row, int column, unsigned char *fb, int column_max);
+extern void fb_clean_point(int row, int column, unsigned char *fb, int column_max);
 extern void fb_write_line(int start_r, int start_c, int length, int width, unsigned char *fb, int column_max);
 extern void fb_write_dollop(int starx, int starty, int endx, int endy, unsigned char *fb, int column_max);
+extern void fb_clean_dollop(int starx, int starty, int endx, int endy, unsigned char *fb, int column_max);
 extern void fb_negation_point(int row, int column, unsigned char *fb, int column_max);
 extern void fb_negation_dollop(int startx, int starty, int endx, int endy, unsigned char *fb, int column_max);
 #endif /* __FRAME_BUFFER_H__ */

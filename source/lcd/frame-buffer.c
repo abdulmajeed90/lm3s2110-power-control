@@ -132,7 +132,7 @@ void fb_write_char(int row, int column, const char *ptrc, unsigned char *fb, int
 
 		if (word == '\n') {
 			i += column_max;
-			j = 0;
+			j = column-5;
 		}
 		/* lookup from wrod table */
 		if (word < ' ')
@@ -162,6 +162,17 @@ void fb_write_point(int row, int column, unsigned char *fb, int column_max)
 	*(fb+i*column_max+column) = word;
 }
 
+void fb_clean_point(int row, int column, unsigned char *fb, int column_max)
+{
+	int i;
+	unsigned char word;
+
+	i = row/8;
+	word = *(fb+i*column_max+column);
+	word &= ~(0x1 << (row%8));
+	*(fb+i*column_max+column) = word;
+}
+
 void fb_negation_point(int row, int column, unsigned char *fb, int column_max)
 {
 	int i;
@@ -180,6 +191,16 @@ void fb_write_dollop(int startx, int starty, int endx, int endy, unsigned char *
 	for (i=starty;i<=endy;i++)
 		for (j=startx;j<=endx;j++) {
 			fb_write_point(i,j,fb,column_max);
+		}
+}
+
+void fb_clean_dollop(int startx, int starty, int endx, int endy, unsigned char *fb, int column_max)
+{
+	int i, j;
+
+	for (i=starty;i<=endy;i++)
+		for (j=startx;j<=endx;j++) {
+			fb_clean_point(i,j,fb,column_max);
 		}
 }
 

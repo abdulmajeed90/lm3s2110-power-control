@@ -113,7 +113,7 @@ int infrared_decode(volatile unsigned char *dat)
 
 /* infrared_value -
  */
-volatile unsigned char *infrared_value(void)
+unsigned char infrared_value(void)
 {
-	return infrared_data;
+	return infrared_data[2];
 }		/* -----  end of function infrared_value  ----- */

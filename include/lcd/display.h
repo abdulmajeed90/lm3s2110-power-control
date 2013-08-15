@@ -20,7 +20,8 @@ typedef struct {
 
 extern void display_start(frame_buffer_t *frame_buffer);
 extern int display_roll(frame_buffer_t *frame_buffer, int place, int roll, int dirction, int step);
-extern void display_clean(frame_buffer_t *frame_buffer, int x, int y, int length, int width);
-extern void display_boxes(frame_buffer_t *frame_buffer,int x, int y, int length, int width);
+extern void display_clean(frame_buffer_t *frame_buffer, int x, int y, int length, int width, int color);
+extern void display_boxes(frame_buffer_t *frame_buffer,int x, int y, int length, int width, int edge);
 extern void display_add_string(frame_buffer_t *frame_buffer, int x, int y, const char *string);
+extern void display_negation_boxes(frame_buffer_t *frame_buffer,int x, int y, int length, int width);
 #endif /* __DISPLAY_H__ */

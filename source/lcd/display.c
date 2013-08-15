@@ -62,23 +62,26 @@ int display_roll(frame_buffer_t *frame_buffer, int place, int roll, int dirction
 
 /* display_clean - clean the screen
 */
-void display_clean(frame_buffer_t *frame_buffer, int x, int y, int length, int width)
+void display_clean(frame_buffer_t *frame_buffer, int x, int y, int length, int width, int color)
 {
 	unsigned char *fb = frame_buffer->fb;
 	int column_max = frame_buffer->column_max;
 
-	fb_negation_dollop(x,y,x+length,y+width,fb,column_max);
+	if (color)
+		fb_write_dollop(x,y,x+length,y+width,fb,column_max);
+	else
+		fb_clean_dollop(x,y,x+length,y+width,fb,column_max);
 }		/* -----  end of function display_clean  ----- */
 
 /*  display_boxes - write a boxes on LCD
  */
-void display_boxes(frame_buffer_t *frame_buffer,int x, int y, int length, int width)
+void display_boxes(frame_buffer_t *frame_buffer,int x, int y, int length, int width, int edge)
 {
 	unsigned char *fb = frame_buffer->fb;
 	int column_max = frame_buffer->column_max;
 
 	fb_write_dollop(x,y,x+length,y+width,fb,column_max);
-	fb_negation_dollop(x+1,x+y,x+length-1,y+width-1,fb,column_max);
+	fb_negation_dollop(x+edge,x+y,x+length-edge,y+width-edge,fb,column_max);
 }		/* -----  end of function display_boxes  ----- */
 
 /* display_add_string - add a string on LCD
@@ -88,6 +91,16 @@ void display_add_string(frame_buffer_t *frame_buffer, int x, int y, const char *
 	unsigned char *fb = frame_buffer->fb;
 	int column_max = frame_buffer->column_max;
 
-	fb_write_char(x,y,string, fb, column_max); 
+	fb_write_char(y,x,string, fb, column_max); 
 
 }		/* -----  end of function display_add_string  ----- */
+
+/* display_negation_boxes -
+ */
+void display_negation_boxes(frame_buffer_t *frame_buffer,int x, int y, int length, int width)
+{
+	unsigned char *fb = frame_buffer->fb;
+	int column_max = frame_buffer->column_max;
+
+	fb_negation_dollop(x,y,x+length,y+width,fb,column_max);
+}		/* -----  end of function display_negation_boxes  ----- */
