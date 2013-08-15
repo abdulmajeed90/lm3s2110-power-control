@@ -9,6 +9,6 @@
 #define __DELAY_H__
 
 #define delay_ms(a)	SysCtlDelay((a) * (SysCtlClockGet() / 3000));
-#define delay_us(a)	SysCtlDelay((a) * (SysCtlClockGet() / 3));
+#define delay_us(a)	SysCtlDelay((a) * (SysCtlClockGet() / 3000000));
 
 #endif /* __DELAY_H__ */

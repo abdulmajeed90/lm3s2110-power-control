@@ -35,6 +35,7 @@ void infrared_handler(void)
 	if (infrared_decode(infrared_data) == true)
 		infrared_flag = 1;
 
+	GPIOPinWrite(INFRARED_PORT, INFRARED_PIN, 0xff);
 	IntEnable(INFRARED_INT);
 }		/* -----  end of function infrared_handler  ----- */
 
@@ -65,25 +66,23 @@ int infrared_decode(volatile unsigned char *dat)
 {
 	int i;
 	int m, n;
-#if 0
-	delay_ms(10);
+
+	delay_ms(5);
 	/* Validate shoot */
 	if (INFRARED_READ == 1)
 		return false;
-#endif
 
 	/* Jump over 9ms shoot */
-	while (INFRARED_READ == 0) {
-		delay_ms(1);
-		i++;
-		if (i>20)
+	for (i=0; INFRARED_READ == 0; i++) {
+		delay_us(500);
+		if (i>30)
 			return false;
 	}
 
 	/* Jump over 4.5ms blank */
 	for (i=0; INFRARED_READ == 1; i++) {
-		delay_ms(1);
-		if (i>10)
+		delay_us(50);
+		if (i>200)
 			return false;
 	}
 
@@ -91,19 +90,19 @@ int infrared_decode(volatile unsigned char *dat)
 	for (m=0; m<4; m++) {
 		for (n=0; n<8; n++) {
 			/* Jump over shoot */
-			for (i=0; INFRARED_READ == 1; i++) {
-				delay_ms(1);
-				if (i > 10)
+			for (i=0; INFRARED_READ == 0; i++) {
+				delay_us(50);
+				if (i > 100)
 					return false;
 			}
 			/* count blank */
-			for (i=0; INFRARED_READ == 0; i++) {
-				delay_ms(1);
-				if (i > 3)
+			for (; INFRARED_READ == 1; i++) {
+				delay_us(50);
+				if (i > 150)
 					return false;
 			}
 
-			if (i >= 2)
+			if (i >= 30)
 				dat[m] = (dat[m] >> 1) | 0x80;
 			else
 				dat[m] = (dat[m] >> 1);
@@ -113,7 +112,7 @@ int infrared_decode(volatile unsigned char *dat)
 }
 
 /* infrared_value -
-*/
+ */
 volatile unsigned char *infrared_value(void)
 {
 	return infrared_data;

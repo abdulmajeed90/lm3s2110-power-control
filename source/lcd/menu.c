@@ -123,8 +123,7 @@ int menu_refresh(void)
 		if  (i == 0) {
 			if (screen < (FRAME_BUFFER_SCREEN - 1) ) {
 				screen++;
-			}
-			else {
+			} else {
 				i=1;
 				screen--;
 			}
@@ -146,7 +145,7 @@ int menu_refresh(void)
 		infrared = infrared_value();
 		infrared_flag=0;
 
-		sprintf(string, "%3d,%3d,%3d,%3d", infrared[0],infrared[1],infrared[2],infrared[3]);
+		sprintf(string, "%3x,%3x,%3x,%3x", infrared[0],infrared[1],infrared[2],infrared[3]);
 		menu_add_string(5, string);
 /* 	}
  */
@@ -175,5 +174,5 @@ void menu_add_string(int num, const char *string)
  */
 void menu_clean_page(void)
 {
-	display_boxes(&fb, fb_place, 0, 84, 48);
+	display_clean(&fb, fb_place, 0, 84, 48);
 }		/* -----  end of function menu_clean_page  ----- */

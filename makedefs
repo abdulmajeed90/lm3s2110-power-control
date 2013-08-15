@@ -249,7 +249,5 @@ ${COMPILER}/%.axf:
 	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
 # For gdb
 	cp ${@}${LNK_SCP} ../gdb
-# Download
-	${GDB} -ex 'target remote localhost:3333' -ex 'mon reset' -ex 'mon halt' -ex 'load' -ex 'mon reset' -ex 'q' -ex 'y' -nw ${@}${LNK_SCP}
 	
 endif

@@ -87,6 +87,9 @@ $(PACKETNAME).tar.bz2:
 #
 # Other build
 #
+# Download
+gdb:
+	${GDB} -ex 'target remote localhost:3333' -ex 'mon reset' -ex 'mon halt' -ex 'load' -ex 'mon reset' -ex 'q' -ex 'y' -nw ./gcc/power.axf
 tools:
 	cd tools;make
 cscope:
