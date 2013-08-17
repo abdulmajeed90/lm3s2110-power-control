@@ -1,8 +1,8 @@
 #******************************************************************************
 #
-# Makefile - Rules for building the CAN Device LED Switch.
+# Makefile - Rules for building the power example.
 #
-# Copyright (c) 2007-2008 Luminary Micro, Inc.  All rights reserved.
+# Copyright (c) 2005-2008 Luminary Micro, Inc.  All rights reserved.
 # 
 # Software License Agreement
 # 
@@ -30,13 +30,20 @@
 # Defines the part type that this project uses.
 #
 PART=LM3S2110
+#PART=LM3S8962
+#PART=LM3S811
+#PART=LM3S1138
+NAME=power
+VERSION=1
+SUBLEVEL=1
+PACKETNAME=$(PART)-$(NAME)-$(VERSION).$(SUBLEVEL)
+
+DEBUG=1
 
 #
 # The base directory for DriverLib.
 #
 ROOT=.
-
-DEBUG=
 
 #
 # Include the common make definitions.
@@ -94,20 +101,26 @@ tools:
 cscope:
 	ctags -R
 	cscope -RqkbvI /usr/local/arm/luminary/arm-luminary-eabi/include
+#cscope -RqkbvI /opt/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/include/
 #
 # The rule to create the target directory.
 #
 ${COMPILER}:
 	@mkdir ${COMPILER}
+
 #
 # Rules for building the power example.
 #
 #${COMPILER}/power.axf: ${COMPILER}/osram96x16x1.o
 ${COMPILER}/power.axf: ${COMPILER}/startup_gcc.o
-${COMPILER}/power.axf: ${COMPILER}/power.o
 ${COMPILER}/power.axf: ${COMPILER}/lm3s2110-reset.o
-${COMPILER}/power.axf: ${COMPILER}/stellaris_fury-vector.o
+${COMPILER}/power.axf: ${COMPILER}/power.o
+${COMPILER}/power.axf: ${COMPILER}/start.o
+#${COMPILER}/power.axf: ${COMPILER}/start_c.o
+${COMPILER}/power.axf: ${COMPILER}/start.o
+#${COMPILER}/power.axf: ${COMPILER}/stellaris-vector.o
 ${COMPILER}/power.axf: ${COMPILER}/stellaris_fury-isrs.o
+
 #
 # Add power source
 #
@@ -137,15 +150,15 @@ else
 ${COMPILER}/power.axf: ${ROOT}/lib/libdriver-nodebug.a
 endif
 
-#
-# Rules for building the CAN Device LED Switch.
-#
-#SCATTERgcc_can_device_led=can_device_led.ld
-#${COMPILER}/can_device_led.axf: can_device_led_sourcerygxx.ld
-SCATTERgcc_can_device_led=lm3s2110-rom.ld
-${COMPILER}/can_device_led.axf: lm3s2110-rom.ld
-SCATTERsourcerygxx_can_device_led=lm3s2110-rom.ld -T can_device_led_sourcerygxx.ld
-ENTRY_can_device_led=ResetISR
+ifeq (${COMPILER}, gcc)
+#${COMPILER}/power.axf: lm3s2110-rom.ld
+endif
+
+#SCATTERgcc_power=power.ld
+#SCATTERgcc_power=lm3s2110-rom.ld
+#SCATTERsourcerygxx_power=lm3s2110-rom.ld -T power_sourcerygxx.ld
+#SCATTERsourcerygxx_power=lm3s2110-rom.ld
+ENTRY_power=ResetISR
 
 #
 # Include the automatically generated dependency files.

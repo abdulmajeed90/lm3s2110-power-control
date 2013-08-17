@@ -27,7 +27,7 @@ typedef struct {
 
 /* pid_calc - get the change value by pid
  */
-void pid_calc(PID_t *pid)
+long pid_calc(PID_t *pid)
 {
 	pid->perror = (long)(pid->target - pid->new);
 	pid->ierror += pid->perror;

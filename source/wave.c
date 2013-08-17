@@ -161,7 +161,7 @@ void wave_spwm(void)
 /* 	IntEnable(INT_PWM0);
  */
 	/* Configure the periority of interrupt */
-	IntPrioritySet(INT_PWM0, 3);
+	/* IntPrioritySet(INT_PWM0, 3); */
 #endif
 
 #if 1
@@ -275,7 +275,7 @@ void wave_capture(void (*capture_handler)(void))
 
 /* wave_capture_32 - wave capture by timer
  * @capture_handler: the handler function for capture.
- * enable timer0 channel A and CCP0(PA0).
+ * enable timer0 channel A and a GPIO.
  * capture all of edges. both positive edges and negative edges.
  */
 void wave_cap32(void (*capture_handler)(void))
@@ -285,15 +285,6 @@ void wave_cap32(void (*capture_handler)(void))
 	/* Enable the peripherals */
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
     SysCtlPeripheralEnable(WAVE_32_PERIPH);
-	/* Configure GPIO in input */
-	GPIOPinTypeGPIOInput(WAVE_32_PORT, WAVE_32_PIN);
-	/* Configure interrupt type */
-	GPIOIntTypeSet(WAVE_32_PORT, WAVE_32_PIN, GPIO_BOTH_EDGES);
-
-	/* Register the interrupt handler */
-	GPIOPortIntRegister(WAVE_32_PORT, capture_handler);
-	/* Enable the pin interrupt */
-	GPIOPinIntEnable(WAVE_32_PORT, WAVE_32_PIN);
 
 	/* Configure timer structure */
 	timer.base = TIMER0_BASE;
@@ -307,6 +298,15 @@ void wave_cap32(void (*capture_handler)(void))
 
 	/* Enable the port interrupt */
 	TimerEnable(timer.base, timer.ntimer);
+	/* Configure GPIO in input */
+	GPIOPinTypeGPIOInput(WAVE_32_PORT, WAVE_32_PIN);
+	/* Configure interrupt type */
+	GPIOIntTypeSet(WAVE_32_PORT, WAVE_32_PIN, GPIO_BOTH_EDGES);
+	/* Register the interrupt handler */
+	GPIOPortIntRegister(WAVE_32_PORT, capture_handler);
+	/* Enable the pin interrupt */
+	GPIOPinIntEnable(WAVE_32_PORT, WAVE_32_PIN);
+
 	IntEnable(WAVE_32_INT);
 }		/* -----  end of function wave_capture  ----- */
 

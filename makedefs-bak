@@ -67,110 +67,80 @@ endif
 # Definitions for using GCC.
 #
 #******************************************************************************
-ifeq (${COMPILER}, gcc)
-
+#******************************************************************************
 #
-# Get the prefix for the tools to use.  Use arm-none-eabi if it exists,
-# otherwise fall back to arm-stellaris-eabi.
+# Definitions for using Sourcery G++.
 #
-#PREFIX=${shell type arm-stellaris-eabi-gcc > /dev/null 2>&1 && \
-#         echo arm-stellaris-eabi || echo arm-none-eabi}
-PREFIX=arm-luminary-eabi
-
-#PREFIX=arm-cortexm3-eabi
+#******************************************************************************
 
 #
 # The command for calling the compiler.
 #
-CC=${PREFIX}-gcc
+CC=arm-none-eabi-gcc
 
 #
 # The flags passed to the assembler.
 #
 AFLAGS=-mthumb         \
        -mcpu=cortex-m3 \
-       -MD             \
-	   -lc
-#AFLAGS=-mthumb         \
-#	   -march=armv7    \
-#	   -mfix-cortex-m3-ldrd \
-#       -MD
-#
-
+       -MD
 
 #
 # The flags passed to the compiler.
 #
 CFLAGS=-mthumb         \
        -mcpu=cortex-m3 \
+       -O2             \
        -MD             \
        -std=c99        \
        -Wall           \
        -pedantic       \
        -DPART_${PART}  \
-       -c	\
-       -I./include     
-
-
-#-O2             \
-#CFLAGS=-mthumb         \
-#	   -march=armv7    \
-#	   -mfix-cortex-m3-ldrd \
-#       -MD             \
-#       -std=c99        \
-#       -Wall           \
-#       -c	\
-#       -I./include     
-
+       -I./include     \
+       -c
 
 #
 # The command for calling the library archiver.
 #
-AR=${PREFIX}-ar
+AR=arm-none-eabi-ar
 
 #
 # The command for calling the linker.
 #
-LD=${PREFIX}-ld
+LD=arm-none-eabi-gcc
 
 #
 # The flags passed to the linker.
 #
-#LDFLAGS=--gc-sections
-LDFLAGS=--gc-sections
-
-#
-# Get the location of libgcc.a from the GCC front-end.
-#
-LIBGCC=${shell ${CC} ${CFLAGS} -print-libgcc-file-name}
-
-#
-# Get the location of libc.a from the GCC front-end.
-#
-#LIBC=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
-LIBC=./lib/libc.a
+LDFLAGS=-mthumb           \
+        -mcpu=cortex-m3   \
+		-T./lm3s2110-rom.ld \
+        -Wl,--gc-sections
 
 #
 # The command for extracting images from the linked executables.
 #
-OBJCOPY=${PREFIX}-objcopy
+OBJCOPY=arm-none-eabi-objcopy
 
 #
 # Tell the compiler to include debugging information if the DEBUG environment
 # variable is set.
 #
-#ifdef DEBUG
+ifdef DEBUG
 CFLAGS+=-g -D DEBUG
-#endif
+endif
 
 #
 # Add the tool specific CFLAGS.
 #
+#CFLAGS+=${CFLAGSsourcerygxx}
 CFLAGS+=${CFLAGSgcc}
 
 #
 # Add the include file paths to AFLAGS and CFLAGS.
 #
+#AFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
+#CFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
 AFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
 CFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
 
@@ -220,28 +190,15 @@ ${COMPILER}/%.a:
 # The rule for linking the application.
 #
 ${COMPILER}/%.axf:
-	if [ 'x${SCATTERgcc_${notdir ${@:.axf=}}}' = x ];                    \
-	 then                                                                 \
-	     ldname=${ROOT}/lm3s2110-rom.ld                                   \
-	 else                                                                 \
-	     ldname=${ROOT}/lm3s2110-rom.ld                                   \
-	 fi;                                                                  \
-	 if [ 'x${VERBOSE}' = x ];                                            \
-	 then                                                                 \
-	     echo "  LD    ${@} ${LNK_SCP}";                                  \
-	 else                                                                 \
-	     echo ${LD} -T $${ldname}                                         \
-	          --entry ${ENTRY_${notdir ${@:.axf=}}}                       \
-	          ${LDFLAGSgcc_${notdir ${@:.axf=}}}                          \
-	          ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                  \
-	          '${LIBC}' '${LIBGCC}';                                      \
-	 fi;                                                                  \
-	${LD} -T $${ldname}                                                   \
-	      --entry ${ENTRY_${notdir ${@:.axf=}}}                           \
-	      ${LDFLAGSgcc_${notdir ${@:.axf=}}}                              \
-	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
-	      '${LIBC}' '${LIBGCC}'
+	@if [ 'x${VERBOSE}' = x ];                                              \
+	 then                                                                   \
+	     echo "  LD    ${@}";                                               \
+	 else                                                                   \
+	     echo ${LD} -T ${SCATTERsourcerygxx_${notdir ${@:.axf=}}}           \
+	          ${LDFLAGSsourcerygxx_${notdir ${@:.axf=}}} ${LDFLAGS} -o ${@} \
+	          $(filter %.o %.a, ${^});                                      \
+	 fi;                                                                    \
+	${LD} -T ${SCATTERsourcerygxx_${notdir ${@:.axf=}}}                     \
+	      ${LDFLAGSsourcerygxx_${notdir ${@:.axf=}}} ${LDFLAGS} -o ${@}     \
+	      $(filter %.o %.a, ${^})
 	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
-#for gdb
-	cp ${@}${LNK_SCP} ../gdb
-endif

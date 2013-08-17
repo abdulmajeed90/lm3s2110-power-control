@@ -103,7 +103,6 @@ void ads_point_reg(void)
 unsigned int ads_read(unsigned int channel)
 {
 	unsigned short int result=0;
-	unsigned char tmp[2];
 
 	if (channel > 4)
 		channel = 0;
@@ -124,6 +123,8 @@ unsigned int ads_read(unsigned int channel)
 	/* result = ads_read_count(16); */
 	stop();
 #else
+	unsigned char tmp[2];
+
 	iic_read(0x91, tmp, 2);
 	result |= tmp[0] << 8;
 	result |= tmp[1];

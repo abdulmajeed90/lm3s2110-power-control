@@ -19,6 +19,15 @@ typedef struct {
 	unsigned int amplitude;
 	unsigned int frequency;
 } MENU_WAVE_t;
+/* The data and function to menu_display */
+typedef struct menu_t {
+	int page;
+	char *title;
+	void *para;
+	void (*display)(int,void *);
+	struct menu_t *previous;
+	struct menu_t *next;
+} MENU_t;
 
 extern void menu_start(void);
 extern void menu_end(void);
@@ -26,4 +35,7 @@ extern int menu_refresh(void);
 extern void menu_clean_now(void);
 extern void menu_parameter_page(int page, MENU_PARAMETER_t *para);
 extern void menu_wave_page(int page, MENU_WAVE_t *wave);
+
+extern void menu_init_parameter(int page, MENU_PARAMETER_t *para);
+extern void menu_display(void);
 #endif /* __MENU_H__ */

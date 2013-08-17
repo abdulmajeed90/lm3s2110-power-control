@@ -216,12 +216,17 @@ int main(void)
 
 #ifdef MODULE_CAP
 /* 	wave_capture(timer_capture_handler); */
-	wave_cap32(timer_cap32_handler);
 	wave_interrupt_init(0xffff, timer_interrupt_handler);
+	wave_cap32(timer_cap32_handler);
 #endif
 
 #ifdef MODULE_ADS
 	ads_init();
+#ifdef MODULE_LCD
+	MENU_PARAMETER_t *menu_para;
+	menu_para = (MENU_PARAMETER_t *)malloc(sizeof (MENU_PARAMETER_t));
+	menu_init_parameter(1, menu_para);
+#endif
 #endif
 
 	/* enable systerm interrupt */
@@ -236,28 +241,31 @@ int main(void)
 	wave_pwm(10000, 80000);
 #endif
 
+
 	while(1) {
 #ifdef MODULE_LCD
  		menu_clean_now();
+		menu_display();
 
 #ifdef MODULE_ADS
 		unsigned int ads_value;
-		MENU_PARAMETER_t menu_para;
+/* 		MENU_PARAMETER_t menu_para; */
 
 		/* ADS channel 2 */
 		for (count = 5; count; count--)
 			ads_value = ads_read(1);
 
-		menu_para.voltage = ads_voltage(ads_value);
+		menu_para->voltage = ads_voltage(ads_value);
 
 		/* ADS channel 1 */
 		for (count = 5; count; count--)
 			ads_value = ads_read(2);
 
-		menu_para.current = ads_current(ads_value);
+		menu_para->current = ads_current(ads_value);
 
 		/* display the page */
-		menu_parameter_page(1, &menu_para);
+/* 		menu_parameter_page(1, &menu_para);
+ */
 		
 		/* ADS channel 1 */
 /* 		for (count = 10; count; count--)
@@ -286,12 +294,16 @@ int main(void)
 		menu_add_string(i++, string);
 		*/
 		
-		MENU_WAVE_t menu_wave;
+/* 		MENU_WAVE_t menu_wave;
+ */
 		/* load value to follower wave */
+#if 0
 		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2) >> 1;
 		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2) >> 1;
+#endif
 
-		menu_wave_page(2, &menu_wave);
+/* 		menu_wave_page(2, &menu_wave);
+ */
 #ifdef MODULE_SPWM
 		/* Sync spwm period with input */
 		/* 		wave_spwm_load((tmp1+tmp2)/85); */

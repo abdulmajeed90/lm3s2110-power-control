@@ -41,8 +41,8 @@ os:=${shell uname -s}
 #
 #******************************************************************************
 ifndef COMPILER
-COMPILER=gcc
-#COMPILER=sourcerygxx
+#COMPILER=gcc
+COMPILER=sourcerygxx
 endif
 
 #******************************************************************************
@@ -71,13 +71,10 @@ ifeq (${COMPILER}, gcc)
 
 #
 # Get the prefix for the tools to use.  Use arm-none-eabi if it exists,
-# otherwise fall back to arm-stellaris-eabi.
+# otherwise fall back to arm-none-eabi.
 #
-#PREFIX=${shell type arm-stellaris-eabi-gcc > /dev/null 2>&1 && \
-#         echo arm-stellaris-eabi || echo arm-none-eabi}
-PREFIX=arm-luminary-eabi
-
-#PREFIX=arm-cortexm3-eabi
+PREFIX=${shell type arm-none-eabi-gcc > /dev/null 2>&1 && \
+         echo arm-none-eabi || echo arm-none-eabi}
 
 #
 # The command for calling the compiler.
@@ -89,39 +86,20 @@ CC=${PREFIX}-gcc
 #
 AFLAGS=-mthumb         \
        -mcpu=cortex-m3 \
-       -MD             \
-	   -lc
-#AFLAGS=-mthumb         \
-#	   -march=armv7    \
-#	   -mfix-cortex-m3-ldrd \
-#       -MD
-#
-
+       -MD
 
 #
 # The flags passed to the compiler.
 #
 CFLAGS=-mthumb         \
        -mcpu=cortex-m3 \
+       -O2             \
        -MD             \
        -std=c99        \
        -Wall           \
        -pedantic       \
        -DPART_${PART}  \
-       -c	\
-       -I./include     
-
-
-#-O2             \
-#CFLAGS=-mthumb         \
-#	   -march=armv7    \
-#	   -mfix-cortex-m3-ldrd \
-#       -MD             \
-#       -std=c99        \
-#       -Wall           \
-#       -c	\
-#       -I./include     
-
+       -c
 
 #
 # The command for calling the library archiver.
@@ -136,7 +114,6 @@ LD=${PREFIX}-ld
 #
 # The flags passed to the linker.
 #
-#LDFLAGS=--gc-sections
 LDFLAGS=--gc-sections
 
 #
@@ -147,8 +124,7 @@ LIBGCC=${shell ${CC} ${CFLAGS} -print-libgcc-file-name}
 #
 # Get the location of libc.a from the GCC front-end.
 #
-#LIBC=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
-LIBC=./lib/libc.a
+LIBC=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
 
 #
 # The command for extracting images from the linked executables.
@@ -159,9 +135,9 @@ OBJCOPY=${PREFIX}-objcopy
 # Tell the compiler to include debugging information if the DEBUG environment
 # variable is set.
 #
-#ifdef DEBUG
+ifdef DEBUG
 CFLAGS+=-g -D DEBUG
-#endif
+endif
 
 #
 # Add the tool specific CFLAGS.
@@ -220,11 +196,11 @@ ${COMPILER}/%.a:
 # The rule for linking the application.
 #
 ${COMPILER}/%.axf:
-	if [ 'x${SCATTERgcc_${notdir ${@:.axf=}}}' = x ];                    \
+	@if [ 'x${SCATTERgcc_${notdir ${@:.axf=}}}' = x ];                    \
 	 then                                                                 \
-	     ldname=${ROOT}/lm3s2110-rom.ld                                   \
+	     ldname=${ROOT}/gcc/standalone.ld;                                \
 	 else                                                                 \
-	     ldname=${ROOT}/lm3s2110-rom.ld                                   \
+	     ldname=${SCATTERgcc_${notdir ${@:.axf=}}};                       \
 	 fi;                                                                  \
 	 if [ 'x${VERBOSE}' = x ];                                            \
 	 then                                                                 \
@@ -242,6 +218,176 @@ ${COMPILER}/%.axf:
 	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
 	      '${LIBC}' '${LIBGCC}'
 	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
-#for gdb
-	cp ${@}${LNK_SCP} ../gdb
 endif
+
+#******************************************************************************
+#
+# Definitions for using Sourcery G++.
+#
+#******************************************************************************
+ifeq (${COMPILER}, sourcerygxx)
+
+#
+# The command for calling the compiler.
+#
+CC=arm-luminary-eabi-gcc
+
+#
+# The flags passed to the assembler.
+#
+AFLAGS=-mthumb         \
+       -mcpu=cortex-m3 \
+       -MD
+
+#
+# The flags passed to the compiler.
+#
+CFLAGS=-mthumb         \
+       -mcpu=cortex-m3 \
+       -O2             \
+       -MD             \
+       -std=c99        \
+       -Wall           \
+       -pedantic       \
+       -DPART_${PART}  \
+	   -I./include     \
+       -c
+
+#
+# The command for calling the library archiver.
+#
+#AR=arm-none-eabi-ar
+AR=arm-luminary-eabi-ar
+
+#
+# The command for calling the linker.
+#
+#LD=arm-none-eabi-gcc
+LD=arm-luminary-eabi-gcc
+
+#
+# The flags passed to the linker.
+#
+LDFLAGS=-mthumb           \
+        -mcpu=cortex-m3   \
+        -Wl,--gc-sections
+
+#
+# The command for extracting images from the linked executables.
+#
+#OBJCOPY=arm-none-eabi-objcopy
+OBJCOPY=arm-luminary-eabi-objcopy
+
+#
+# Tell the compiler to include debugging information if the DEBUG environment
+# variable is set.
+#
+ifdef DEBUG
+CFLAGS+=-g -D DEBUG
+endif
+
+#
+# Add the tool specific CFLAGS.
+#
+CFLAGS+=${CFLAGSsourcerygxx}
+
+#
+# Get the location of libgcc.a from the GCC front-end.
+#
+LIBGCC=${shell ${CC} ${CFLAGS} -print-libgcc-file-name}
+
+#
+# Get the location of libc.a from the GCC front-end.
+#
+LIBC=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
+
+#
+# Get the location of libm.a from the GCC front-end.
+#
+LIBM=${shell ${CC} ${CFLAGS} -print-file-name=libm.a}
+
+#
+# Add the include file paths to AFLAGS and CFLAGS.
+#
+AFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
+CFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
+
+#
+# The rule for building the object file from each C source file.
+#
+${COMPILER}/%.o: %.c
+	@if [ 'x${VERBOSE}' = x ];                            \
+	 then                                                 \
+	     echo "  CC    ${<}";                             \
+	 else                                                 \
+	     echo ${CC} ${CFLAGS} -D${COMPILER} -o ${@} ${<}; \
+	 fi
+	@${CC} ${CFLAGS} -D${COMPILER} -o ${@} ${<}
+ifneq ($(findstring CYGWIN, ${os}), )
+	@sed -i -r 's/ ([A-Za-z]):/ \/cygdrive\/\1/g' ${@:.o=.d}
+endif
+
+#
+# The rule for building the object file from each assembly source file.
+#
+${COMPILER}/%.o: %.S
+	@if [ 'x${VERBOSE}' = x ];                               \
+	 then                                                    \
+	     echo "  AS    ${<}";                                \
+	 else                                                    \
+	     echo ${CC} ${AFLAGS} -D${COMPILER} -o ${@} -c ${<}; \
+	 fi
+	@${CC} ${AFLAGS} -D${COMPILER} -o ${@} -c ${<}
+ifneq ($(findstring CYGWIN, ${os}), )
+	@sed -i -r 's/ ([A-Za-z]):/ \/cygdrive\/\1/g' ${@:.o=.d}
+endif
+
+#
+# The rule for creating an object library.
+#
+${COMPILER}/%.a:
+	@if [ 'x${VERBOSE}' = x ];     \
+	 then                          \
+	     echo "  AR    ${@}";      \
+	 else                          \
+	     echo ${AR} -cr ${@} ${^}; \
+	 fi
+	@${AR} -cr ${@} ${^}
+
+#
+# The rule for linking the application.
+#
+#${COMPILER}/%.axf:
+#	@if [ 'x${VERBOSE}' = x ];                                              \
+#	 then                                                                   \
+#	     echo "  LD    ${@}";                                               \
+#	 else                                                                   \
+#	     echo ${LD} -T ${SCATTERsourcerygxx_${notdir ${@:.axf=}}}           \
+#	          ${LDFLAGSsourcerygxx_${notdir ${@:.axf=}}} ${LDFLAGS} -o ${@} \
+#	          $(filter %.o %.a, ${^});                                      \
+#	 fi;                                                                    \
+#	${LD} -T ${SCATTERsourcerygxx_${notdir ${@:.axf=}}}                     \
+#	      ${LDFLAGSsourcerygxx_${notdir ${@:.axf=}}} ${LDFLAGS} -o ${@}     \
+#	      $(filter %.o %.a, ${^})
+#	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
+#endif
+${COMPILER}/%.axf:
+		ldname=${ROOT}/lm3s2110-rom.ld;                                   \
+	 if [ 'x${VERBOSE}' = x ];                                            \
+	 then                                                                 \
+	     echo "  LD    ${@} ${LNK_SCP}";                                  \
+	 else                                                                 \
+	     echo ${LD} -T $${ldname}                                         \
+	          --entry ${ENTRY_${notdir ${@:.axf=}}}                       \
+	          ${LDFLAGSgcc_${notdir ${@:.axf=}}}                          \
+	          ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                  \
+	          '${LIBC}' '${LIBM}' '${LIBGCC}';                            \
+	 fi;                                                                  \
+	${LD} -T ./lm3s2110-rom.ld                                            \
+	      --entry ${ENTRY_${notdir ${@:.axf=}}}                           \
+	      ${LDFLAGSgcc_${notdir ${@:.axf=}}}                              \
+	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
+	      '${LIBC}' '${LIBM}' '${LIBGCC}'
+	${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
+endif
+

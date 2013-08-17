@@ -7,6 +7,18 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
+#include "hw_ints.h"
+#include "hw_memmap.h"
+#include "hw_types.h"
+#include "src/debug.h"
+#include "src/interrupt.h"
+#include "src/sysctl.h"
+#include "src/timer.h"
+#include "src/gpio.h"
+
+
 #include "lcd/display.h"
 #include "periph/button.h"
 #include "periph/infrared.h"
@@ -95,12 +107,14 @@ static void menu_nagation_entry(int page, int num)
 
 /* menu_clean_page - clean a specify page
  */
+#if 0
 static void menu_clean_page(int page)
 {
 	unsigned int x = 84*(page-1);
 
 	display_clean(&fb, x, 0, x+84, 48, 0);
 }		/* -----  end of function menu_clean_page  ----- */
+#endif
 
 /* menu_input - input a date
  */
@@ -250,8 +264,68 @@ void menu_clean_now(void)
 	display_clean(&fb, fb_place, 0, fb_place+84, 48, 0);
 }		/* -----  end of function menu_clean_now  ----- */
 
-/* menu_parameter_page - display parameter on LCD
+MENU_t *menu_list;
+
+/* menu_display_parameter - display the parameter page
  */
+static void menu_display_parameter(int page, MENU_PARAMETER_t *para)
+{
+	char string[40];
+	
+	/* display volage and current value */
+	sprintf(string, "U=%d.%dV\nI=%d.%dA", para->voltage/1000, para->voltage%1000, para->current/1000, para->current%1000);
+	menu_add_string(page, 1, string); 
+
+	/* no operation */
+	if (now_screen == page-1) 
+		menu_operation = 0;
+}		/* -----  end of function menu_display_parameter  ----- */
+
+/* menu_init_parameter - initialize a parameter page
+ */
+#define MENU_PARAMETER_TITLE	"====Parameter==="
+void menu_init_parameter(int page, MENU_PARAMETER_t *para)
+{
+	MENU_t *menu;
+	char *string;
+
+	/* Add the page on menu list */
+	menu = menu_list;
+	if (menu == NULL) {
+		menu = (MENU_t *)malloc(sizeof (MENU_t));
+		menu_list = menu;
+		memset(menu, 0, sizeof (MENU_t));
+		menu->next = NULL;
+		menu->previous = NULL;
+	} else {
+		while (menu->next != NULL) {
+			menu = menu->next;
+		}
+		menu->next = (MENU_t *)malloc(sizeof (MENU_t));
+		menu->next->previous = menu;
+		menu = menu->next;
+		memset(menu, 0, sizeof (MENU_t));
+	}
+
+	/* Initialize the parameter page */
+	/* Add the title */
+	/* string = (char *)malloc(sizeof (MENU_PARAMETER_TITLE)); */
+	string = (char *)malloc(20);
+	sprintf(string, MENU_PARAMETER_TITLE);
+	menu->title = string;
+	/* Add data structure */
+	/* para = (MENU_PARAMETER_t *)malloc(sizeof (MENU_PARAMETER_t)); */
+	memset(para, 0, sizeof (MENU_PARAMETER_t));
+	menu->para = (void *)para;
+	/* Add the display function */
+	menu->display = (void (*)(int,void *))menu_display_parameter;
+	/* Add the page number */
+	menu->page = page;
+	
+}		/* -----  end of function menu_init_parameter  ----- */
+
+/* menu_parameter_page - display parameter on LCD
+*/
 void menu_parameter_page(int page, MENU_PARAMETER_t *para)
 {
 	char string[16];
@@ -274,16 +348,18 @@ void menu_wave_page(int page, MENU_WAVE_t *wave)
 	static unsigned int entry_place = MENU_WAVE_ENTRY_TOP;
 	char string[32];
 	unsigned int *value[MENU_WAVE_ENTRY_BOTTOM - MENU_WAVE_ENTRY_TOP + 1];
+	unsigned long freq = 0;
 
 	value[0] = &wave->amplitude;
 	value[1] = &wave->frequency;
+	freq = SysCtlClockGet() / (wave->period1+wave->period2);
 
 	menu_title(page, "======wave======");
-	/* display the period1 */
-	sprintf(string, "P1=%d", wave->period1);
+	/* display the period */
+	sprintf(string, "P=%d,%d", wave->period1, wave->period2);
 	menu_add_string(page, 1, string);
-	/* display the period2 */
-	sprintf(string, "P2=%d", wave->period2);
+	/* display the period */
+	sprintf(string, "F=%ld", freq>>1);
 	menu_add_string(page, 2, string);
 	/* display the parameter of waveform */
 	sprintf(string, "A=%dV\nF=%dHz", *value[0], *value[1]);
@@ -323,3 +399,35 @@ void menu_wave_page(int page, MENU_WAVE_t *wave)
 		menu_nagation_entry(page, entry_place);
 	}
 }		/* -----  end of function menu_wave_page  ----- */
+
+/* menu_display -
+*/
+#define MENU_TITLE_REFRESH	(2)
+void menu_display(void)
+{
+	MENU_t *menu;
+	static unsigned char i=0;
+	
+	menu = menu_list;
+	/* if no page */
+	if (menu == NULL)
+		return;
+
+	/* display the now page */
+	while (menu->page-1 != now_screen) {
+		menu = menu->next;
+		if (menu == NULL)
+			return;
+	}
+
+	/* Refresh the title */
+	i += MENU_TITLE_REFRESH;
+	if (!i) {
+		menu_title(menu->page, menu->title);
+	}
+	
+	/* display the data */
+	(*menu->display)(menu->page, (void *)(menu->para));
+
+	menu_roll(now_screen);
+}		/* -----  end of function menu_display  ----- */
