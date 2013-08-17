@@ -13,12 +13,17 @@
 #include "wave.h"
 #include "lcd/menu.h"
 
+/* The page list of the menu */
+MENU_LIST_t menu_list[FRAME_BUFFER_SCREEN];
+
 unsigned char frame_buffer[FRAME_BUFFER_ROW_MAX][FRAME_BUFFER_COLUMN_MAX];
 
 frame_buffer_t fb;
 static unsigned int fb_place=0;
 static int now_screen=0;
 extern volatile unsigned int infrared_flag;
+extern volatile unsigned int gpio_b_int_status;
+unsigned char menu_operation;
 
 /*  menu_roll - roll the display to screen
  *  return now screen.
@@ -173,88 +178,12 @@ static void menu_input(int page, unsigned int *dat, int num)
 	*dat = value;
 }		/* -----  end of static function menu_input  ----- */
 
-/*  menu_start - initial all module for menu
- *  initial LCD.
- *  initial button.
+/* menu_display_parameter - display the parameter page
  */
-void menu_start(void)
-{
-/* 
- * 	unsigned char *frame_buffer;
- * 	unsigned long lenght = FRAME_BUFFER_ROW_MAX*FRAME_BUFFER_COLUMN_MAX;
- *  	frame_buffer = (unsigned char *)malloc((sizeof (unsigned char)) * lenght);
- */
-
-	/* initial LCD */
-	fb.fb = (unsigned char *)frame_buffer;
-	fb.column_max = FRAME_BUFFER_COLUMN_MAX;
-	display_start(&fb);
-
-	/* initial button */
-	/* button_init_gpio(); */
-	
-	/* infrared initialize */
-	infrared_init();
-}		/* -----  end of function menu_start  ----- */
-
-void menu_end(void)
-{
-/* 	free(fb.fb); */
-}
-
-/*  menu_refresh - refresh the display with button
-*/
-extern volatile unsigned int gpio_b_int_status;
-unsigned char menu_operation;
-int menu_refresh(void)
-{
-	static int screen = 0;
-	unsigned char flags;
-
-	/* recieved infrared sign */
-	if (infrared_flag == 1) {
-		infrared_flag = 0;
-
-		flags = infrared_value();
-		/* select button */
-		switch (flags) {
-			case MENU_FORWARD: /* forward page */
-				if (screen > 0)
-					screen--;
-				break;
-			case MENU_BACK:	/* back page */
-				if (screen < (FRAME_BUFFER_SCREEN - 1))
-					screen++;
-				break;
-			case MENU_UP: /* entry up */
-			case MENU_DOWN: /* entry down */
-			case MENU_INC: /* data increase */
-			case MENU_DEC: /* date decrease */
-			case MENU_CONFIRM:
-				menu_operation = flags;
-				break;
-			case 0:
-			default:
-				break;
-		}
-	}
-	menu_roll(screen);
-
-	return screen;
-}		/* -----  end of function menu_refresh  ----- */
-
-/* menu_clean_now - clean now screen
- */
-void menu_clean_now(void)
-{
-	display_clean(&fb, fb_place, 0, fb_place+84, 48, 0);
-}		/* -----  end of function menu_clean_now  ----- */
-
-/* menu_parameter_page - display parameter on LCD
- */
-void menu_parameter_page(int page, MENU_PARAMETER_t *para)
+static void menu_display_parameter(int page, void *para_v)
 {
 	char string[16];
+	MENU_PARAMETER_t *para = (MENU_PARAMETER_t *)para_v;
 	
 	menu_title(page, "====Parameter===");
 	/* display volage and current value */
@@ -263,15 +192,17 @@ void menu_parameter_page(int page, MENU_PARAMETER_t *para)
 	/* no operation */
 	if (now_screen == page-1) 
 		menu_operation = 0;
-}		/* -----  end of function menu_parameter_page  ----- */
 
-/* menu_wave_page - display output wave and wave capture
-*/
+}		/* -----  end of static function menu_display_parameter  ----- */
+
+/* menu_display_wave -
+ */
 #define MENU_WAVE_ENTRY_TOP		3
 #define MENU_WAVE_ENTRY_BOTTOM	4
-void menu_wave_page(int page, MENU_WAVE_t *wave)
+static void menu_display_wave(int page, void *wave_v)
 {
 	static unsigned int entry_place = MENU_WAVE_ENTRY_TOP;
+	MENU_WAVE_t *wave = (MENU_WAVE_t *)wave_v;
 	char string[32];
 	unsigned int *value[MENU_WAVE_ENTRY_BOTTOM - MENU_WAVE_ENTRY_TOP + 1];
 
@@ -322,4 +253,131 @@ void menu_wave_page(int page, MENU_WAVE_t *wave)
 		menu_operation = 0;
 		menu_nagation_entry(page, entry_place);
 	}
-}		/* -----  end of function menu_wave_page  ----- */
+
+}		/* -----  end of function menu_display_wave  ----- */
+
+/* menu_display_empty -
+ */
+static void menu_display_empty(int page, void *para)
+{
+}		/* -----  end of function menu_display_empty  ----- */
+
+/*  menu_start - initial all module for menu
+ *  initial LCD.
+ *  initial button.
+ */
+void menu_start(void)
+{
+	int i;
+/* 
+ * 	unsigned char *frame_buffer;
+ * 	unsigned long lenght = FRAME_BUFFER_ROW_MAX*FRAME_BUFFER_COLUMN_MAX;
+ *  	frame_buffer = (unsigned char *)malloc((sizeof (unsigned char)) * lenght);
+ */
+
+	/* initial LCD */
+	fb.fb = (unsigned char *)frame_buffer;
+	fb.column_max = FRAME_BUFFER_COLUMN_MAX;
+	display_start(&fb);
+
+	/* initial button */
+	/* button_init_gpio(); */
+	/* clean the menu list */
+	for (i=1; i <= FRAME_BUFFER_SCREEN; i++)
+		menu_list_clean(i, 0);
+	
+	/* infrared initialize */
+	infrared_init();
+}		/* -----  end of function menu_start  ----- */
+
+void menu_end(void)
+{
+/* 	free(fb.fb); */
+}
+
+/*  menu_refresh - refresh the display with button
+*/
+int menu_refresh(void)
+{
+	static int screen = 0;
+	unsigned char flags;
+
+	/* recieved infrared sign */
+	if (infrared_flag == 1) {
+		infrared_flag = 0;
+
+		flags = infrared_value();
+		/* select button */
+		switch (flags) {
+			case MENU_FORWARD: /* forward page */
+				if (screen > 0)
+					screen--;
+				break;
+			case MENU_BACK:	/* back page */
+				if (screen < (FRAME_BUFFER_SCREEN - 1))
+					screen++;
+				break;
+			case MENU_UP: /* entry up */
+			case MENU_DOWN: /* entry down */
+			case MENU_INC: /* data increase */
+			case MENU_DEC: /* date decrease */
+			case MENU_CONFIRM:
+				menu_operation = flags;
+				break;
+			case 0:
+			default:
+				break;
+		}
+	}
+	menu_roll(screen);
+
+	return screen;
+}		/* -----  end of function menu_refresh  ----- */
+
+/* menu_clean_now - clean now screen
+ */
+void menu_clean_now(void)
+{
+	display_clean(&fb, fb_place, 0, fb_place+84, 48, 0);
+}		/* -----  end of function menu_clean_now  ----- */
+
+/* menu_list_clean - clean the menu list
+ */
+void menu_list_clean(int page, void *para)
+{
+	menu_list[page-1].display = menu_display_empty;
+	menu_list[page-1].para = para;
+}		/* -----  end of function menu_list_clean  ----- */
+
+/* menu_init_parameter - initialize the parameter page
+ * Connect the parameter.
+ */
+void menu_init_parameter(int page, MENU_PARAMETER_t *para)
+{
+	menu_list[page-1].display = menu_display_parameter;
+	menu_list[page-1].para = (void *)para;
+}		/* -----  end of function menu_init_parameter  ----- */
+
+/* menu_init_wave -
+*/
+void menu_init_wave(int page, MENU_WAVE_t *wave)
+{
+	menu_list[page-1].display = menu_display_wave;
+	menu_list[page-1].para = (void *)wave;
+}		/* -----  end of function menu_init_wave  ----- */
+
+/* menu_display - display now screen
+ * display now page an other page will stop.
+ */
+void menu_display(void)
+{
+	int screen;
+
+	screen = menu_refresh();
+
+	menu_clean_page(screen+1);
+	/* Display now page */
+	(*menu_list[screen].display)(screen+1, menu_list[screen].para);
+	/* Display on LCD */
+	menu_roll(screen);
+}		/* -----  end of function menu_display  ----- */

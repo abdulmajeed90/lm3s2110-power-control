@@ -103,7 +103,7 @@ void ads_point_reg(void)
 unsigned int ads_read(unsigned int channel)
 {
 	unsigned short int result=0;
-	unsigned char tmp[2];
+	/* unsigned char tmp[2]; */
 
 	if (channel > 4)
 		channel = 0;

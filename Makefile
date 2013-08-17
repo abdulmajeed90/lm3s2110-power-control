@@ -89,7 +89,12 @@ $(PACKETNAME).tar.bz2:
 #
 # Download
 gdb:
-	${GDB} -ex 'target remote localhost:3333' -ex 'mon reset' -ex 'mon halt' -ex 'load' -ex 'mon reset' -ex 'q' -ex 'y' -nw ./gcc/power.axf
+	${GDB} -ex 'target remote localhost:3333' -ex 'mon reset halt' -ex 'load' -ex 'mon reset' -ex 'q' ./gcc/power.axf
+gdbrun:
+	${GDB} -ex 'target remote localhost:3333' -ex 'mon reset halt' -ex 'load' -ex 'mon reset halt' ./gcc/power.axf
+gdbtui:
+	${GDB} -ex 'target remote localhost:3333' -ex 'mon reset halt' -ex 'load' -ex 'mon reset halt' ./gcc/power.axf --tui
+
 tools:
 	cd tools;make
 cscope:

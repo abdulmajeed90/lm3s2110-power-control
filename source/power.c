@@ -14,12 +14,11 @@
 #include "src/gpio.h"
 
 /* module */
-#define MODULE_SPWM
+/* #define MODULE_SPWM */
 #define MODULE_LCD
-/* #define MODULE_PWM */
 #define MODULE_PLL
 #define MODULE_ADS
-#define MODULE_CAP
+/* #define MODULE_CAP */
 /* #define MODULE_DAC_5618 */
 /* #define MODULE_BUTTON */
 
@@ -50,10 +49,6 @@
 #include "periph/button.h"
 #endif
 
-#ifdef MODULE_PWM
-#include "wave.h"
-#endif
-
 #ifdef MODULE_SPWM
 #include "wave.h"
 #endif
@@ -77,7 +72,7 @@ void timer_capture_handler(void)
 	timer_cap[i++] = 0xffff - TimerValueGet(TIMER0_BASE, TIMER_A);
 	TimerLoadSet(TIMER0_BASE, TIMER_A, 0xffff);
 	TimerIntClear(TIMER0_BASE, TIMER_CAPA_EVENT);
-	
+
 	/* get the wave form */
 	i = i%TIMER_VALUE_DEEPIN;
 
@@ -101,7 +96,7 @@ void timer_cap32_handler(void)
 	timer_cap[i++] = wave_cap32_getvalue();
 	wave_cap32_load(0xffffffff);
 	wave_cap32_start();
-	
+
 	/* get the wave form */
 	i = i%TIMER_VALUE_DEEPIN;
 
@@ -153,14 +148,14 @@ void timer_interrupt_handler(void)
 #endif
 
 #ifdef DEBUG
-void
+	void
 __error__(char *pcFilename, unsigned long ulLine)
 {
 }
 #endif
 
 /* jtag_wait() - wait for JTAG pin. protect the JTAG
- */
+*/
 #define JTAG_WAIT_PERIPH	SYSCTL_PERIPH_GPIOB
 #define JTAG_WAIT_BASE		GPIO_PORTB_BASE
 #define JTAG_WAIT_PIN		GPIO_PIN_0
@@ -169,8 +164,8 @@ void jtag_wait(void)
 	/* enable key GPIO */
 	SysCtlPeripheralEnable(JTAG_WAIT_PERIPH);
 	/* write 1 to PIN */
-    GPIOPinTypeGPIOOutput(JTAG_WAIT_BASE, JTAG_WAIT_PIN);
-    GPIOPinWrite(JTAG_WAIT_BASE, JTAG_WAIT_PIN, 0xff);
+	GPIOPinTypeGPIOOutput(JTAG_WAIT_BASE, JTAG_WAIT_PIN);
+	GPIOPinWrite(JTAG_WAIT_BASE, JTAG_WAIT_PIN, 0xff);
 	/* set key GPIO is input */
 	GPIOPinTypeGPIOInput(JTAG_WAIT_BASE, JTAG_WAIT_PIN);
 	/* if press button while rest */
@@ -184,7 +179,6 @@ void jtag_wait(void)
 int main(void)
 {
 	unsigned int count=0;
-	unsigned long tmp1, tmp2;
 	/* int i=0; */
 
 	jtag_wait();
@@ -215,9 +209,9 @@ int main(void)
 #endif
 
 #ifdef MODULE_CAP
-/* 	wave_capture(timer_capture_handler); */
-	wave_cap32(timer_cap32_handler);
 	wave_interrupt_init(0xffff, timer_interrupt_handler);
+	/* 	wave_capture(timer_capture_handler); */
+	wave_cap32(timer_cap32_handler);
 #endif
 
 #ifdef MODULE_ADS
@@ -225,24 +219,31 @@ int main(void)
 #endif
 
 	/* enable systerm interrupt */
- 	IntMasterEnable();
+	IntMasterEnable();
 
 #ifdef MODULE_DAC_5618
 	DAC_write_data(0x1ff, 1);
 #endif
 
 
-#ifdef MODULE_PWM
-	wave_pwm(10000, 80000);
+	/* initialize menu data */
+#ifdef MODULE_LCD
+#ifdef MODULE_ADS
+	MENU_PARAMETER_t menu_para;
+	menu_init_parameter(1, &menu_para);
+#endif
+#ifdef MODULE_CAP
+	MENU_WAVE_t menu_wave;
+
+	menu_init_wave(2, &menu_wave);
+#endif
 #endif
 
 	while(1) {
 #ifdef MODULE_LCD
- 		menu_clean_now();
 
 #ifdef MODULE_ADS
 		unsigned int ads_value;
-		MENU_PARAMETER_t menu_para;
 
 		/* ADS channel 2 */
 		for (count = 5; count; count--)
@@ -256,42 +257,28 @@ int main(void)
 
 		menu_para.current = ads_current(ads_value);
 
-		/* display the page */
-		menu_parameter_page(1, &menu_para);
-		
 		/* ADS channel 1 */
-/* 		for (count = 10; count; count--)
- * 			ads_value = ads_read(3);
- * 
- * 		sprintf(string, "ADC4: %6d", ads_value);
- * 		menu_add_string(i++, string);
- */
+		/* 		for (count = 10; count; count--)
+		 * 			ads_value = ads_read(3);
+		 * 
+		 * 		sprintf(string, "ADC4: %6d", ads_value);
+		 * 		menu_add_string(i++, string);
+		 */
 #endif
 
 #ifdef MODULE_CAP
+		unsigned long tmp1, tmp2;
 		/* Get the capture average */
 		for (tmp1 = timer_cap[0], count=2; count<TIMER_VALUE_DEEPIN; count+=2)
 			tmp1 = (tmp1 + timer_cap[count]) >> 1;
 
-		/*
- 		sprintf(string, "CAP: %6ld", tmp1);
-		menu_add_string(i++, string);
-		*/
-
 		for (tmp2 = timer_cap[1], count=3; count<TIMER_VALUE_DEEPIN; count+=2)
 			tmp2 = (tmp2 + timer_cap[count]) >> 1;
 
-		/* 
- 		sprintf(string, "CAP: %6ld", tmp2);
-		menu_add_string(i++, string);
-		*/
-		
-		MENU_WAVE_t menu_wave;
 		/* load value to follower wave */
 		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2) >> 1;
 		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2) >> 1;
 
-		menu_wave_page(2, &menu_wave);
 #ifdef MODULE_SPWM
 		/* Sync spwm period with input */
 		/* 		wave_spwm_load((tmp1+tmp2)/85); */
@@ -299,19 +286,9 @@ int main(void)
 #endif
 #endif
 
-		tmp1 = menu_refresh();
-
-#ifdef MODULE_PWM
-		int m, n;
-
-		m = tmp1;
-
-		if (n != m) {
-			n = m;
-			wave_pwm((n+1)*10000, 80000);
-		}
 #endif
-#endif
+		/* Display the screen */
+		menu_display();
 	}
 
 #ifdef MODULE_LCD
