@@ -14,7 +14,7 @@
 #include "src/gpio.h"
 
 /* module */
-/* #define MODULE_SPWM */
+#define MODULE_SPWM
 #define MODULE_LCD
 #define MODULE_PLL
 #define MODULE_ADS
@@ -193,7 +193,7 @@ int main(void)
 	 * xtal 8MHz.
 	 * system clock div 20MHz.
 	 */
-	SysCtlClockSet(SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_8MHZ|SYSCTL_SYSDIV_8);
+	SysCtlClockSet(SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_8MHZ|SYSCTL_SYSDIV_4);
 #endif
 
 #ifdef MODULE_LCD

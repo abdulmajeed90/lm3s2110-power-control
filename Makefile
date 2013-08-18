@@ -29,8 +29,8 @@
 #
 # Defines the part type that this project uses.
 #
-PART=LM3S2110
-#PART=LM3S8962
+#PART=LM3S2110
+PART=LM3S8962
 #PART=LM3S811
 #PART=LM3S1138
 NAME=power

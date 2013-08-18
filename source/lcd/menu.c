@@ -7,6 +7,10 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "hw_types.h"
+#include "src/sysctl.h"
+
 #include "lcd/display.h"
 #include "periph/button.h"
 #include "periph/infrared.h"
@@ -192,7 +196,6 @@ static void menu_display_parameter(int page, void *para_v)
 	/* no operation */
 	if (now_screen == page-1) 
 		menu_operation = 0;
-
 }		/* -----  end of static function menu_display_parameter  ----- */
 
 /* menu_display_wave -
@@ -253,13 +256,23 @@ static void menu_display_wave(int page, void *wave_v)
 		menu_operation = 0;
 		menu_nagation_entry(page, entry_place);
 	}
-
 }		/* -----  end of function menu_display_wave  ----- */
 
 /* menu_display_empty -
  */
 static void menu_display_empty(int page, void *para)
 {
+	/* char string[16]; */
+	
+	menu_title(page, "======Empty=====");
+	/* display volage and current value */
+	/*
+	sprintf(string, "F=%ldHz", (unsigned long)SysCtlClockGet());
+	menu_add_string(page, 1, string); 
+	*/
+	/* no operation */
+	if (now_screen == page-1) 
+		menu_operation = 0;
 }		/* -----  end of function menu_display_empty  ----- */
 
 /*  menu_start - initial all module for menu
