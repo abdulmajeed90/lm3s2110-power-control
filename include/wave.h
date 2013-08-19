@@ -32,11 +32,26 @@
 #define WAVE_32_PREAD	(GPIOPinRead(WAVE_32_PORT, WAVE_32_PIN) & WAVE_32_PIN)
 
 #define	PWM_PIN_PERIPH	SYSCTL_PERIPH_GPIOA
-#define	PWM_PORT	GPIO_PORTA_BASE
+#define	PWM_PIN_PORT	GPIO_PORTA_BASE
 #define PWM_PIN		GPIO_PIN_5
-#define PWM_PREAD	(GPIOPinRead(PWM_PORT, PWM_PIN) & PWM_PIN)
-#define PWM_OU		GPIOPinWrite(PWM_PORT, PWM_PIN, 0xff)
-#define PWM_OD		GPIOPinWrite(PWM_PORT, PWM_PIN, 0)
+#define PWM_PREAD	(GPIOPinRead(PWM_PIN_PORT, PWM_PIN) & PWM_PIN)
+#define PWM_OU		GPIOPinWrite(PWM_PIN_PORT, PWM_PIN, 0xff)
+#define PWM_OD		GPIOPinWrite(PWM_PIN_PORT, PWM_PIN, 0)
+
+#define	PWM_PIN_PORT	GPIO_PORTA_BASE
+#define PWM_P0_PIN		GPIO_PIN_5
+#define PWM_P1_PIN		GPIO_PIN_6
+#define PWM_P2_PIN		GPIO_PIN_7
+#define PWM_P0_PREAD	(GPIOPinRead(PWM_PIN_PORT, PWM_P0_PIN) & PWM_P0_PIN)
+#define PWM_P1_PREAD	(GPIOPinRead(PWM_PIN_PORT, PWM_P1_PIN) & PWM_P1_PIN)
+#define PWM_P2_PREAD	(GPIOPinRead(PWM_PIN_PORT, PWM_P2_PIN) & PWM_P2_PIN)
+#define PWM_P0_OU		GPIOPinWrite(PWM_PIN_PORT, PWM_P0_PIN, 0xff)
+#define PWM_P1_OU		GPIOPinWrite(PWM_PIN_PORT, PWM_P1_PIN, 0xff)
+#define PWM_P2_OU		GPIOPinWrite(PWM_PIN_PORT, PWM_P2_PIN, 0xff)
+#define PWM_P0_OD		GPIOPinWrite(PWM_PIN_PORT, PWM_P0_PIN, 0)
+#define PWM_P1_OD		GPIOPinWrite(PWM_PIN_PORT, PWM_P1_PIN, 0)
+#define PWM_P2_OD		GPIOPinWrite(PWM_PIN_PORT, PWM_P2_PIN, 0)
+
 
 extern void wave_spwm(void);
 extern void wave_spwm_data(unsigned int amplitude);

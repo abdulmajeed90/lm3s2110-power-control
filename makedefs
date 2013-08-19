@@ -248,6 +248,6 @@ ${COMPILER}/%.axf:
 	      '${LIBC}' '${LIBGCC}'
 	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
 # For gdb
-	cp ${@}${LNK_SCP} ../gdb
+#cp ${@}${LNK_SCP} ../gdb
 	
 endif

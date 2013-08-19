@@ -15,9 +15,9 @@
 
 /* module */
 #define MODULE_SPWM
-#define MODULE_LCD
+/* #define MODULE_LCD */
 #define MODULE_PLL
-#define MODULE_ADS
+/* #define MODULE_ADS */
 /* #define MODULE_CAP */
 /* #define MODULE_DAC_5618 */
 /* #define MODULE_BUTTON */
@@ -178,7 +178,8 @@ void jtag_wait(void)
 
 int main(void)
 {
-	unsigned int count=0;
+/* 	unsigned int count=0;
+ */
 	/* int i=0; */
 
 	jtag_wait();
@@ -286,9 +287,9 @@ int main(void)
 #endif
 #endif
 
-#endif
 		/* Display the screen */
 		menu_display();
+#endif
 	}
 
 #ifdef MODULE_LCD

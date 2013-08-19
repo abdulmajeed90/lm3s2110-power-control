@@ -47,6 +47,7 @@ void pwm_spwm_handler(void)
 	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_value);
 
 }
+
 unsigned int spwm_reset=0;
 void time_spwm_handler(void)
 {
@@ -81,6 +82,116 @@ void time_spwm_handler(void)
 	}
 	if (j > 1024) {
 		j=0;
+		/* Enable pwm interrupt for switch wave */
+		/* 		IntEnable(INT_PWM0); */
+		/* Output postive period */
+		wave_flag=1;
+		/* Close timer */
+/* 		TimerDisable(TIMER2_BASE, TIMER_A); */
+	}
+
+}
+
+unsigned char spwm_value_0=0xf;
+unsigned char spwm_value_1=0xf;
+unsigned char spwm_value_2=0xf;
+void pwm_three_phase_0_handler(void)
+{
+	PWMGenIntClear(PWM_BASE, PWM_GEN_0, PWM_INT_GEN_0);
+
+	/* Output the switch wave */
+	if (spwm_flag) {
+			PWM_P0_OD;
+	} else {
+			PWM_P0_OU;
+	}
+
+	/* 	IntDisable(INT_PWM0);
+	*/
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_value_0);
+}
+
+void pwm_three_phase_1_handler(void)
+{
+	PWMGenIntClear(PWM_BASE, PWM_GEN_1, PWM_INT_GEN_0);
+
+	/* Output the switch wave */
+	if (spwm_flag) {
+			PWM_P1_OD;
+	} else {
+			PWM_P1_OU;
+	}
+
+	/* 	IntDisable(INT_PWM0);
+	*/
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_2, spwm_value_1);
+}
+
+void pwm_three_phase_2_handler(void)
+{
+	PWMGenIntClear(PWM_BASE, PWM_GEN_2, PWM_INT_GEN_2);
+
+	/* Output the switch wave */
+	if (spwm_flag) {
+			PWM_P2_OD;
+	} else {
+			PWM_P2_OU;
+	}
+
+	/* 	IntDisable(INT_PWM0);
+	*/
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_4, spwm_value_2);
+}
+
+#define SPWM_PHASE			(((1024*1024)/50)/3)
+#define SPWM_WIDTH_PHASE	((1024*1024)/50)
+#define THREE_PHASE(x,y,z) do { y=x+SPWM_PHASE; \
+								y%=SPWM_WIDTH_PHASE; \
+								z=x+SPWM_PHASE*2; \
+								z%=SPWM_WIDTH_PHASE; \
+							} while (0)
+void time_three_phase_handler(void)
+{
+	static unsigned int wave_flag=1;
+	static unsigned int i0=0, j0=0;
+	static unsigned int i1=0, j1=0;
+	static unsigned int i2=0, j2=0;
+
+	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
+
+	if (spwm_reset == 1) {
+		i0=j0=0;
+		spwm_reset=0;
+		wave_flag=1;
+	}
+
+	if (wave_flag) {
+		/* sync three pwm counter */
+		THREE_PHASE(i0,i1,i2);
+		spwm_value_0=spwm_a[i0]+0x1;
+		spwm_value_1=spwm_a[i1]+0x1;
+		spwm_value_2=spwm_a[i2]+0x1;
+		i0+=spwm_step;
+		spwm_flag=1;
+	} else {
+		/* sync three pwm counter */
+		THREE_PHASE(j0,j1,j2);
+		spwm_value_0=spwm_b[j0]+0x1;
+		spwm_value_1=spwm_b[j1]+0x1;
+		spwm_value_2=spwm_b[j2]+0x1;
+		j0+=spwm_step;
+		spwm_flag=0;
+	}
+
+	if (i0 > 1024) {
+		i0 = 0;
+		/* Enable pwm interrupt for switch wave */
+		/* 		IntEnable(INT_PWM0); */
+		/* Output negative period */
+		wave_flag=0;
+	}
+	if (j0 > 1024) {
+		j0 = 0;
 		/* Enable pwm interrupt for switch wave */
 		/* 		IntEnable(INT_PWM0); */
 		/* Output postive period */
@@ -132,39 +243,36 @@ void wave_spwm_data_step(unsigned int amplitude)
  */
 void wave_spwm(void)
 {
-	PWM_t pwm1;
+	PWM_t pwm;
 
 	/* sin wave data */
 	wave_spwm_data(1);
 
 	/* Configure for GPIO */
     SysCtlPeripheralEnable(PWM_PIN_PERIPH);
-	GPIOPinTypeGPIOOutput(PWM_PORT, PWM_PIN);
+	GPIOPinTypeGPIOOutput(PWM_PIN_PORT, PWM_PIN);
 
 	/* Configure pwm counter */
-	pwm1.gpio_periph = PWM0_PERIPH;
-	pwm1.gpio_base = PWM0_PORT;
-	pwm1.gpio = PWM0_PIN;
-	pwm1.gen = PWM_GEN_0;
-	pwm1.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
-	pwm1.period = 0xff;
-	pwm1.width = pwm1.period / 2;
-	pwm1.out = PWM_OUT_0;
-	pwm1.outbit = PWM_OUT_0_BIT;
+	pwm.gpio_periph = PWM0_PERIPH;
+	pwm.gpio_base = PWM0_PORT;
+	pwm.gpio = PWM0_PIN;
+	pwm.gen = PWM_GEN_0;
+	pwm.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
+	pwm.period = 0xff;
+	pwm.width = pwm.period / 2;
+	pwm.out = PWM_OUT_0;
+	pwm.outbit = PWM_OUT_0_BIT;
 	/* Configure for pwm interrupt */
-#if 1
-	pwm1.trig = PWM_INT_CNT_ZERO;
-	pwm1.intergen = PWM_INT_GEN_0;
-	pwm1.handler = pwm_spwm_handler;
-	pwm1.interrupt = INT_PWM0;
-	PWM_init(&pwm1);
+	pwm.trig = PWM_INT_CNT_ZERO;
+	pwm.intergen = PWM_INT_GEN_0;
+	pwm.handler = pwm_spwm_handler;
+	pwm.interrupt = INT_PWM0;
+	PWM_init(&pwm);
 /* 	IntEnable(INT_PWM0);
  */
 	/* Configure the periority of interrupt */
-	IntPrioritySet(INT_PWM0, 3);
-#endif
+	IntPrioritySet(INT_PWM0, 1);
 
-#if 1
 	/* Enable the peripherals */
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);
 
@@ -185,8 +293,105 @@ void wave_spwm(void)
 	IntPrioritySet(INT_TIMER2A, 0);
 
 	TimerEnable(timer.base, timer.ntimer);
-#endif
 }
+
+/* wave_three_phase - output three phase spwm
+ */
+void wave_three_phase(void)
+{
+	PWM_t pwm;
+
+	/* sin wave data */
+	wave_spwm_data(1);
+
+	/* Configure for GPIO */
+    SysCtlPeripheralEnable(PWM_PIN_PERIPH);
+	GPIOPinTypeGPIOOutput(PWM_PIN_PORT, PWM_P0_PIN | PWM_P1_PIN | PWM_P2_PIN);
+
+	/* Configure pwm 0 */
+	pwm.gpio_periph = PWM0_PERIPH;
+	pwm.gpio_base = PWM0_PORT;
+	pwm.gpio = PWM0_PIN;
+	pwm.gen = PWM_GEN_0;
+	pwm.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
+	pwm.period = 0xff;
+	pwm.width = pwm.period / 2;
+	pwm.out = PWM_OUT_0;
+	pwm.outbit = PWM_OUT_0_BIT;
+	/* Configure for pwm interrupt */
+	pwm.trig = PWM_INT_CNT_ZERO;
+	pwm.intergen = PWM_INT_GEN_0;
+	pwm.handler = pwm_three_phase_0_handler;
+	pwm.interrupt = INT_PWM0;
+	PWM_init(&pwm);
+/* 	IntEnable(INT_PWM0);
+ */
+	/* Configure the periority of interrupt */
+	IntPrioritySet(INT_PWM0, 1);
+
+	/* Configure pwm 1 */
+	pwm.gpio_periph = PWM1_PERIPH;
+	pwm.gpio_base = PWM1_PORT;
+	pwm.gpio = PWM1_PIN;
+	pwm.gen = PWM_GEN_1;
+	pwm.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
+	pwm.period = 0xff;
+	pwm.width = pwm.period / 2;
+	pwm.out = PWM_OUT_2;
+	pwm.outbit = PWM_OUT_2_BIT;
+	/* Configure for pwm interrupt */
+	pwm.trig = PWM_INT_CNT_ZERO;
+	pwm.intergen = PWM_INT_GEN_1;
+	pwm.handler = pwm_three_phase_1_handler;
+	pwm.interrupt = INT_PWM1;
+	PWM_init(&pwm);
+/* 	IntEnable(INT_PWM0);
+ */
+	/* Configure the periority of interrupt */
+	IntPrioritySet(INT_PWM1, 1);
+
+	/* Configure pwm 2 */
+	pwm.gpio_periph = PWM2_PERIPH;
+	pwm.gpio_base = PWM2_PORT;
+	pwm.gpio = PWM2_PIN;
+	pwm.gen = PWM_GEN_2;
+	pwm.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
+	pwm.period = 0xff;
+	pwm.width = pwm.period / 2;
+	pwm.out = PWM_OUT_4;
+	pwm.outbit = PWM_OUT_4_BIT;
+	/* Configure for pwm interrupt */
+	pwm.trig = PWM_INT_CNT_ZERO;
+	pwm.intergen = PWM_INT_GEN_2;
+	pwm.handler = pwm_three_phase_2_handler;
+	pwm.interrupt = INT_PWM2;
+	PWM_init(&pwm);
+/* 	IntEnable(INT_PWM0);
+ */
+	/* Configure the periority of interrupt */
+	IntPrioritySet(INT_PWM3, 1);
+
+	/* Enable the peripherals */
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);
+
+	TIMER_t timer;
+	timer.base = TIMER2_BASE;
+	timer.ntimer = TIMER_A;
+	timer.config = TIMER_CFG_32_BIT_PER;
+/* 	timer.config = TIMER_CFG_A_CAP_TIME | TIMER_CFG_16_BIT_PAIR;
+ */
+	/* 50Hz */
+	timer.value = 5800;
+	timer.interrupt = INT_TIMER2A;
+	timer.prescale = 0;
+	timer.intermod = TIMER_TIMA_TIMEOUT;
+	timer.handler = time_three_phase_handler;
+	TIMER_init(&timer);
+	/* Configure the periority of interrupt */
+	IntPrioritySet(INT_TIMER2A, 0);
+
+	TimerEnable(timer.base, timer.ntimer);
+}		/* -----  end of function wave_three_phase  ----- */
 
 /* wave_spwm_load - load the timer interrupt value
  */
