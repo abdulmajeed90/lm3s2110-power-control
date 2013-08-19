@@ -58,6 +58,9 @@ extern void wave_spwm_data(unsigned int amplitude);
 extern void wave_spwm_data_step(unsigned int amplitude);
 extern void wave_spwm_load(unsigned long value);
 
+extern void wave_three_phase(void);
+extern void wave_three_phase_data(unsigned int amplitude);
+
 extern void wave_pwm(unsigned long period1, unsigned long period2);
 
 extern void wave_capture(void (*capture_handler)(void));

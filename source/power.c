@@ -14,13 +14,13 @@
 #include "src/gpio.h"
 
 /* module */
-#define MODULE_SPWM
+/* #define MODULE_SPWM */
+#define MODULE_THREE_PHASE
 /* #define MODULE_LCD */
 #define MODULE_PLL
 /* #define MODULE_ADS */
 /* #define MODULE_CAP */
 /* #define MODULE_DAC_5618 */
-/* #define MODULE_BUTTON */
 
 
 #ifdef MODULE_ADS
@@ -45,11 +45,11 @@
 #include "periph/dac_5618.h"
 #endif
 
-#ifdef MODULE_BUTTON
-#include "periph/button.h"
+#ifdef MODULE_SPWM
+#include "wave.h"
 #endif
 
-#ifdef MODULE_SPWM
+#ifdef MODULE_THREE_PHASE
 #include "wave.h"
 #endif
 
@@ -156,9 +156,9 @@ __error__(char *pcFilename, unsigned long ulLine)
 
 /* jtag_wait() - wait for JTAG pin. protect the JTAG
 */
-#define JTAG_WAIT_PERIPH	SYSCTL_PERIPH_GPIOB
-#define JTAG_WAIT_BASE		GPIO_PORTB_BASE
-#define JTAG_WAIT_PIN		GPIO_PIN_0
+#define JTAG_WAIT_PERIPH	SYSCTL_PERIPH_GPIOF
+#define JTAG_WAIT_BASE		GPIO_PORTF_BASE
+#define JTAG_WAIT_PIN		GPIO_PIN_1
 void jtag_wait(void)
 {
 	/* enable key GPIO */
@@ -201,12 +201,12 @@ int main(void)
 	menu_start();
 #endif
 
-#ifdef MODULE_BUTTON
+#ifdef MODULE_SPWM
+	wave_spwm();
 #endif
 
-#ifdef MODULE_SPWM
-#include "src/pwm.h"
-	wave_spwm();
+#ifdef MODULE_THREE_PHASE
+	wave_three_phase();
 #endif
 
 #ifdef MODULE_CAP

@@ -21,11 +21,13 @@
 #include "system/sys_pwm.h"
 #include "data/spwm.h"
 
-unsigned char spwm_a[1024];
-unsigned char spwm_b[1024];
+unsigned char spwm_a[SPWM_ARRAY];
+unsigned char spwm_b[SPWM_ARRAY];
+unsigned char spwm_three_phase[SPWM_ARRAY*2];
 /* unsigned char spwm_step=12; */
 /* unsigned char spwm_step=24; */
-unsigned char spwm_step=50;
+/* unsigned char spwm_step=50; */
+unsigned char spwm_step=1;
 unsigned char spwm_value=0xf;
 unsigned char spwm_flag=0;
 unsigned int spwm_count_u=10;
@@ -97,7 +99,18 @@ unsigned char spwm_value_1=0xf;
 unsigned char spwm_value_2=0xf;
 void pwm_three_phase_0_handler(void)
 {
+	/*
+	unsigned int status1, status2, status3;
+
+	status1 = PWMGenIntStatus(PWM_BASE, PWM_GEN_0, true);
+	status2 = PWMGenIntStatus(PWM_BASE, PWM_GEN_1, true);
+	status3 = PWMGenIntStatus(PWM_BASE, PWM_GEN_2, true);
+	*/
+
 	PWMGenIntClear(PWM_BASE, PWM_GEN_0, PWM_INT_GEN_0);
+
+/* 	PWMGenIntClear(PWM_BASE, PWM_GEN_0, status1);
+ */
 
 	/* Output the switch wave */
 	if (spwm_flag) {
@@ -113,7 +126,9 @@ void pwm_three_phase_0_handler(void)
 
 void pwm_three_phase_1_handler(void)
 {
-	PWMGenIntClear(PWM_BASE, PWM_GEN_1, PWM_INT_GEN_0);
+	static unsigned char i=0;
+
+	PWMGenIntClear(PWM_BASE, PWM_GEN_2, PWM_INT_GEN_1);
 
 	/* Output the switch wave */
 	if (spwm_flag) {
@@ -124,12 +139,15 @@ void pwm_three_phase_1_handler(void)
 
 	/* 	IntDisable(INT_PWM0);
 	*/
-	PWMPulseWidthSet(PWM_BASE, PWM_OUT_2, spwm_value_1);
+/* 	PWMPulseWidthSet(PWM_BASE, PWM_OUT_2, spwm_value_1);
+ */
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_4, i++);
 }
 
 void pwm_three_phase_2_handler(void)
 {
-	PWMGenIntClear(PWM_BASE, PWM_GEN_2, PWM_INT_GEN_2);
+	static unsigned char i=0;
+	PWMGenIntClear(PWM_BASE, PWM_GEN_1, PWM_INT_GEN_1);
 
 	/* Output the switch wave */
 	if (spwm_flag) {
@@ -140,11 +158,13 @@ void pwm_three_phase_2_handler(void)
 
 	/* 	IntDisable(INT_PWM0);
 	*/
-	PWMPulseWidthSet(PWM_BASE, PWM_OUT_4, spwm_value_2);
+/* 	PWMPulseWidthSet(PWM_BASE, PWM_OUT_2, spwm_value_2);
+ */
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_2, i++);
 }
 
-#define SPWM_PHASE			(((1024*1024)/50)/3)
-#define SPWM_WIDTH_PHASE	((1024*1024)/50)
+#define SPWM_PHASE			((SPWM_ARRAY*2)/3)
+#define SPWM_WIDTH_PHASE	(SPWM_ARRAY*2)
 #define THREE_PHASE(x,y,z) do { y=x+SPWM_PHASE; \
 								y%=SPWM_WIDTH_PHASE; \
 								z=x+SPWM_PHASE*2; \
@@ -152,52 +172,29 @@ void pwm_three_phase_2_handler(void)
 							} while (0)
 void time_three_phase_handler(void)
 {
-	static unsigned int wave_flag=1;
-	static unsigned int i0=0, j0=0;
-	static unsigned int i1=0, j1=0;
-	static unsigned int i2=0, j2=0;
+	static unsigned int i0=0;
+	static unsigned int i1=0;
+	static unsigned int i2=0;
 
 	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
 
-	if (spwm_reset == 1) {
-		i0=j0=0;
-		spwm_reset=0;
-		wave_flag=1;
-	}
+	/* sync three pwm counter */
+	THREE_PHASE(i0,i1,i2);
 
-	if (wave_flag) {
-		/* sync three pwm counter */
-		THREE_PHASE(i0,i1,i2);
-		spwm_value_0=spwm_a[i0]+0x1;
-		spwm_value_1=spwm_a[i1]+0x1;
-		spwm_value_2=spwm_a[i2]+0x1;
-		i0+=spwm_step;
-		spwm_flag=1;
-	} else {
-		/* sync three pwm counter */
-		THREE_PHASE(j0,j1,j2);
-		spwm_value_0=spwm_b[j0]+0x1;
-		spwm_value_1=spwm_b[j1]+0x1;
-		spwm_value_2=spwm_b[j2]+0x1;
-		j0+=spwm_step;
-		spwm_flag=0;
-	}
+	/* Write pulse width */
+	spwm_value_0=spwm_three_phase[i0]+0x1;
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_value_0);
 
-	if (i0 > 1024) {
+	spwm_value_1=spwm_three_phase[i1]+0x1;
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_3, spwm_value_1);
+
+	spwm_value_2=spwm_three_phase[i2]+0x1;
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_2, spwm_value_2);
+
+	i0+=spwm_step;
+
+	if (i0 >= SPWM_ARRAY*2) {
 		i0 = 0;
-		/* Enable pwm interrupt for switch wave */
-		/* 		IntEnable(INT_PWM0); */
-		/* Output negative period */
-		wave_flag=0;
-	}
-	if (j0 > 1024) {
-		j0 = 0;
-		/* Enable pwm interrupt for switch wave */
-		/* 		IntEnable(INT_PWM0); */
-		/* Output postive period */
-		wave_flag=1;
-		/* Close timer */
-/* 		TimerDisable(TIMER2_BASE, TIMER_A); */
 	}
 
 }
@@ -208,15 +205,45 @@ void wave_spwm_data(unsigned int amplitude)
 {
 	int n;
 
-	for (n=0; n < 512; n++) {
+	for (n=0; n < SPWM_DATA; n++) {
 		spwm_a[n] = spwm_data[n]/amplitude;
-		spwm_a[1023-n] = spwm_data[n]/amplitude;
+		spwm_a[SPWM_ARRAY-1-n] = spwm_data[n]/amplitude;
 	}
-	for (n=0; n < 512; n++) {
+	for (n=0; n < SPWM_DATA; n++) {
 		spwm_b[n] = 0xff - (spwm_data[n]/amplitude);
-		spwm_b[1023-n] = 0xff - (spwm_data[n]/amplitude);
+		spwm_b[SPWM_ARRAY-1-n] = 0xff - (spwm_data[n]/amplitude);
 	}
 }		/* -----  end of function wave_spwm_data  ----- */
+
+/* wave_three_phase_data - initialize the sin data with amplitude
+ */
+void wave_three_phase_data(unsigned int amplitude)
+{
+	int n;
+
+	for (n=0; n<SPWM_DATA; n++) {
+		spwm_three_phase[n] = spwm_data[n]/amplitude;
+		spwm_three_phase[SPWM_ARRAY-1-n] = spwm_data[n]/amplitude;
+	}
+
+	for (n=0; n<SPWM_DATA; n++) {
+		spwm_three_phase[n+SPWM_ARRAY] = 0xff - (spwm_data[n]/amplitude);
+		spwm_three_phase[SPWM_ARRAY*2-1-n] = 0xff - (spwm_data[n]/amplitude);
+	}
+}		/* -----  end of function wave_three_phase_data  ----- */
+
+/* wave_three_phase_test -
+ */
+void wave_three_phase_test(unsigned int amplitude)
+{
+	int n;
+
+	for (n=0; n<SPWM_DATA; n++) {
+		spwm_three_phase[n] = spwm_data[n]/amplitude;
+		spwm_three_phase[SPWM_ARRAY-1-n] = spwm_data[n]/amplitude;
+	}
+
+}		/* -----  end of function wave_three_phase_test  ----- */
 
 /* wave_spwm_data_step - initialize the sin data with amplitude with step
  * The wave step is 64.
@@ -302,7 +329,8 @@ void wave_three_phase(void)
 	PWM_t pwm;
 
 	/* sin wave data */
-	wave_spwm_data(1);
+	/* wave_three_phase_data(1); */
+	wave_three_phase_test(1);
 
 	/* Configure for GPIO */
     SysCtlPeripheralEnable(PWM_PIN_PERIPH);
@@ -321,18 +349,33 @@ void wave_three_phase(void)
 	/* Configure for pwm interrupt */
 	pwm.trig = PWM_INT_CNT_ZERO;
 	pwm.intergen = PWM_INT_GEN_0;
-	pwm.handler = pwm_three_phase_0_handler;
+/* 	pwm.handler = pwm_three_phase_0_handler; */
+	pwm.handler = 0;
 	pwm.interrupt = INT_PWM0;
 	PWM_init(&pwm);
-/* 	IntEnable(INT_PWM0);
- */
-	/* Configure the periority of interrupt */
-	IntPrioritySet(INT_PWM0, 1);
 
-	/* Configure pwm 1 */
-	pwm.gpio_periph = PWM1_PERIPH;
-	pwm.gpio_base = PWM1_PORT;
-	pwm.gpio = PWM1_PIN;
+	/* Configure pwm 2 */
+	pwm.gpio_periph = PWM3_PERIPH;
+	pwm.gpio_base = PWM3_PORT;
+	pwm.gpio = PWM3_PIN;
+	pwm.gen = PWM_GEN_2;
+	pwm.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
+	pwm.period = 0xff;
+	pwm.width = pwm.period / 2;
+	pwm.out = PWM_OUT_3;
+	pwm.outbit = PWM_OUT_3_BIT;
+	/* Configure for pwm interrupt */
+	pwm.trig = PWM_INT_CNT_ZERO;
+	pwm.intergen = PWM_INT_GEN_1;
+/* 	pwm.handler = pwm_three_phase_1_handler; */
+	pwm.handler = 0;
+	pwm.interrupt = INT_PWM2;
+	PWM_init(&pwm);
+
+	/* Configure pwm 3 */
+	pwm.gpio_periph = PWM2_PERIPH;
+	pwm.gpio_base = PWM2_PORT;
+	pwm.gpio = PWM2_PIN;
 	pwm.gen = PWM_GEN_1;
 	pwm.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
 	pwm.period = 0xff;
@@ -342,34 +385,10 @@ void wave_three_phase(void)
 	/* Configure for pwm interrupt */
 	pwm.trig = PWM_INT_CNT_ZERO;
 	pwm.intergen = PWM_INT_GEN_1;
-	pwm.handler = pwm_three_phase_1_handler;
-	pwm.interrupt = INT_PWM1;
-	PWM_init(&pwm);
-/* 	IntEnable(INT_PWM0);
- */
-	/* Configure the periority of interrupt */
-	IntPrioritySet(INT_PWM1, 1);
-
-	/* Configure pwm 2 */
-	pwm.gpio_periph = PWM2_PERIPH;
-	pwm.gpio_base = PWM2_PORT;
-	pwm.gpio = PWM2_PIN;
-	pwm.gen = PWM_GEN_2;
-	pwm.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
-	pwm.period = 0xff;
-	pwm.width = pwm.period / 2;
-	pwm.out = PWM_OUT_4;
-	pwm.outbit = PWM_OUT_4_BIT;
-	/* Configure for pwm interrupt */
-	pwm.trig = PWM_INT_CNT_ZERO;
-	pwm.intergen = PWM_INT_GEN_2;
-	pwm.handler = pwm_three_phase_2_handler;
+/* 	pwm.handler = pwm_three_phase_2_handler; */
+	pwm.handler = 0;
 	pwm.interrupt = INT_PWM2;
 	PWM_init(&pwm);
-/* 	IntEnable(INT_PWM0);
- */
-	/* Configure the periority of interrupt */
-	IntPrioritySet(INT_PWM3, 1);
 
 	/* Enable the peripherals */
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);
