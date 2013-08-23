@@ -121,6 +121,8 @@ extern unsigned long _edata;
 extern unsigned long _bss;
 extern unsigned long _ebss;
 
+extern unsigned long _euserstack;
+
 //*****************************************************************************
 //
 // This is the code that gets called when the processor first starts execution
@@ -158,6 +160,9 @@ ResetISR(void)
           "        it      lt\n"
           "        strlt   r2, [r0], #4\n"
           "        blt     zero_loop");
+
+	/* for sp */
+	__asm("    ldr    sp, =_eusrstack\n");
 
     //
     // Call the application's entry point.

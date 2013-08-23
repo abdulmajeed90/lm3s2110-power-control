@@ -26,10 +26,12 @@
  *
  *****************************************************************************/
 
+_Minimum_Stack_Size = 0x2000 ;
+
 MEMORY
 {
     FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x00010000
-    SRAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00002000
+    SRAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00004000
 }
 
 SECTIONS
@@ -55,6 +57,18 @@ SECTIONS
         *(.bss*)
         *(COMMON)
         _ebss = .;
+		. = ALIGN(8);
         end = .;
     } > SRAM
+	._usrstack :
+	{
+		. = ALIGN(8);
+		_susrstack = . ;
+
+		. = . + _Minimum_Stack_Size ;
+
+		. = ALIGN(8);
+		_eusrstack = . ;
+	} >SRAM
+
 }

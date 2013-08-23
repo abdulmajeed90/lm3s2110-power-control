@@ -137,7 +137,8 @@ LD=${PREFIX}-ld
 # The flags passed to the linker.
 #
 #LDFLAGS=--gc-sections
-LDFLAGS=--gc-sections
+LDFLAGS=--gc-sections      \
+		-Map axf.map
 
 #
 # Get the location of libgcc.a from the GCC front-end.

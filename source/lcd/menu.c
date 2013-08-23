@@ -7,6 +7,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "lcd/display.h"
 #include "periph/button.h"
 #include "periph/infrared.h"
@@ -16,7 +17,7 @@
 /* The page list of the menu */
 MENU_LIST_t menu_list[FRAME_BUFFER_SCREEN];
 
-unsigned char frame_buffer[FRAME_BUFFER_ROW_MAX][FRAME_BUFFER_COLUMN_MAX];
+/* unsigned char frame_buffer[FRAME_BUFFER_ROW_MAX][FRAME_BUFFER_COLUMN_MAX]; */
 
 frame_buffer_t fb;
 static unsigned int fb_place=0;
@@ -114,7 +115,6 @@ static void menu_input(int page, unsigned int *dat, int num)
 {
 	unsigned char flags=0;
 	int input;
-	int size;
 	char string[16];
 	unsigned int value = *dat;
 	int x=(page-1)*84;
@@ -133,11 +133,6 @@ static void menu_input(int page, unsigned int *dat, int num)
 		if (y2 < (48 - MENU_INPUT_STEP))
 			y2 += MENU_INPUT_STEP;
 	}
-	/* get the data size */
-	for (size=0; value != 0; size++) {
-		value /= 10;
-	}
-	value = *dat;
 
 	while (flags != MENU_CONFIRM) {
 		/* recieved infrared sign */
@@ -158,15 +153,11 @@ static void menu_input(int page, unsigned int *dat, int num)
 				case MENU_8:input = 8;break;
 				case MENU_9:input = 9;break;
 				case MENU_BACKSPACE: /* if input backspace */
-							if (size > 0) {
-								size--;
-								value /= 10;
-							}
+							value /= 10;
 							continue;
 				case MENU_CONFIRM: continue;
 				default: continue;
 			}
-			size++;
 			value *= 10;
 			value += input;
 
@@ -269,11 +260,11 @@ static void menu_display_empty(int page, void *para)
 void menu_start(void)
 {
 	int i;
-/* 
- * 	unsigned char *frame_buffer;
- * 	unsigned long lenght = FRAME_BUFFER_ROW_MAX*FRAME_BUFFER_COLUMN_MAX;
- *  	frame_buffer = (unsigned char *)malloc((sizeof (unsigned char)) * lenght);
- */
+
+	unsigned char *frame_buffer;
+	unsigned long lenght = FRAME_BUFFER_ROW_MAX*FRAME_BUFFER_COLUMN_MAX;
+ 	frame_buffer = (unsigned char *)malloc((sizeof (unsigned char)) * lenght);
+	memset(frame_buffer, 0, lenght);
 
 	/* initial LCD */
 	fb.fb = (unsigned char *)frame_buffer;
@@ -292,7 +283,7 @@ void menu_start(void)
 
 void menu_end(void)
 {
-/* 	free(fb.fb); */
+	free(fb.fb);
 }
 
 /*  menu_refresh - refresh the display with button
@@ -359,7 +350,7 @@ void menu_init_parameter(int page, MENU_PARAMETER_t *para)
 }		/* -----  end of function menu_init_parameter  ----- */
 
 /* menu_init_wave -
-*/
+ */
 void menu_init_wave(int page, MENU_WAVE_t *wave)
 {
 	menu_list[page-1].display = menu_display_wave;

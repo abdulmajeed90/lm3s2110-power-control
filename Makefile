@@ -69,11 +69,11 @@ all: ${COMPILER}/power.axf
 # The rule to clean out all the build products.
 #
 clean:
-	@rm -rf ${COMPILER} ${wildcard *~}
+	@rm -rf ${COMPILER} ${wildcard *~} *.map
 	@cd ./tools;make clean
 
 distclean:
-	@rm -rf ${COMPILER} ${wildcard *~} tags cscope.* *.vim vim.*
+	@rm -rf ${COMPILER} ${wildcard *~} *.map tags cscope.* *.vim vim.*
 
 dist: $(PACKETNAME).tar.bz2
 $(PACKETNAME).tar.bz2:
