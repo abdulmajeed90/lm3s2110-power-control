@@ -199,22 +199,26 @@ void wave_spwm_load(unsigned long value)
 */
 void wave_pwm(unsigned long period1, unsigned long period2)
 {
-	PWM_t pwm1, pwm2;
+	PWM_t pwm1;
 	int count = SysCtlClockGet();
 
-	/* configure pwm1 */
-	pwm1.gpio_periph = SYSCTL_PERIPH_GPIOD;
-	pwm1.gpio_base = GPIO_PORTD_BASE;
-	pwm1.gpio = GPIO_PIN_0;
+	/* Configure pwm counter */
+	pwm1.gpio_periph = PWM0_PERIPH;
+	pwm1.gpio_base = PWM0_PORT;
+	pwm1.gpio = PWM0_PIN;
 	pwm1.gen = PWM_GEN_0;
+/* 	pwm1.config = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC;
+ */
+	/* configure pwm1 */
 	pwm1.config = PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC;
 	pwm1.period = count / period1;
-	pwm1.width = pwm1.period / 2;
+	pwm1.width = pwm1.period / 3;
 	pwm1.out = PWM_OUT_0;
 	pwm1.outbit = PWM_OUT_0_BIT;
 	pwm1.handler = 0;
 	PWM_init(&pwm1);
 
+#if 0
 	pwm1.gpio_periph = SYSCTL_PERIPH_GPIOD;
 	pwm1.gpio_base = GPIO_PORTD_BASE;
 	pwm1.gpio = GPIO_PIN_1;
@@ -239,7 +243,23 @@ void wave_pwm(unsigned long period1, unsigned long period2)
 	pwm2.outbit = PWM_OUT_2_BIT;
 	pwm2.handler = 0;
  	PWM_init(&pwm2);
+#endif
 }		/* -----  end of function wave_pwm  ----- */
+
+/* wave_pwm_value - pwm load period value
+ */
+void wave_pwm_value(unsigned long value)
+{
+	PWMGenPeriodSet(PWM_BASE, PWM_GEN_0, value);
+    PWMPulseWidthSet(PWM_BASE, PWM_GEN_0, value>>1);
+}		/* -----  end of function wave_pwm_value  ----- */
+
+/* wave_pwm_get_value -
+*/
+unsigned long wave_pwm_get_value(void)
+{
+	return PWMGenPeriodGet(PWM_BASE, PWM_GEN_0);
+}		/* -----  end of function wave_pwm_get_value  ----- */
 
 /* wave_capture - wave capture by timer
  * @capture_handler: the handler function for capture.

@@ -5,6 +5,14 @@
  * 
  *  Copyright (c) 2013, chenchacha
  */
+#include "hw_ints.h"
+#include "hw_memmap.h"
+#include "hw_types.h"
+#include "src/sysctl.h"
+#include "src/debug.h"
+#include "src/interrupt.h"
+#include "src/sysctl.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,6 +21,8 @@
 #include "periph/infrared.h"
 #include "wave.h"
 #include "lcd/menu.h"
+#include "calculation/pid.h"
+
 
 /* The page list of the menu */
 MENU_LIST_t menu_list[FRAME_BUFFER_SCREEN];
@@ -186,30 +196,78 @@ static void menu_display_parameter(int page, void *para_v)
 
 }		/* -----  end of static function menu_display_parameter  ----- */
 
+/* menu_init_pid -
+ */
+PID_t pid_wave;
+void menu_init_pid(void)
+{
+	pid_wave.kp = 20;
+	pid_wave.ti = 10;
+	pid_wave.td = 0;
+}		/* -----  end of function menu_init_pid  ----- */
+
 /* menu_display_wave -
  */
 #define MENU_WAVE_ENTRY_TOP		3
 #define MENU_WAVE_ENTRY_BOTTOM	4
+#define MENU_GET_PERI(a,b) (((a+b)*1000000)/SysCtlClockGet())
+#define MENU_GET_FREQ(a,b) (SysCtlClockGet()/(a+b))
 static void menu_display_wave(int page, void *wave_v)
 {
 	static unsigned int entry_place = MENU_WAVE_ENTRY_TOP;
 	MENU_WAVE_t *wave = (MENU_WAVE_t *)wave_v;
 	char string[32];
 	unsigned int *value[MENU_WAVE_ENTRY_BOTTOM - MENU_WAVE_ENTRY_TOP + 1];
+	unsigned long frequency = MENU_GET_FREQ(wave->period1, wave->period2);
 
 	value[0] = &wave->amplitude;
 	value[1] = &wave->frequency;
 
 	menu_title(page, "======wave======");
 	/* display the period1 */
-	sprintf(string, "P1=%d", wave->period1);
+	sprintf(string, "1=%d,2=%d", wave->period1, wave->period2);
 	menu_add_string(page, 1, string);
 	/* display the period2 */
-	sprintf(string, "P2=%d", wave->period2);
+	sprintf(string, "A=%ldus,F=%ldHz",
+			MENU_GET_PERI(wave->period1, wave->period2),
+			frequency);
 	menu_add_string(page, 2, string);
 	/* display the parameter of waveform */
 	sprintf(string, "A=%dV\nF=%dHz", *value[0], *value[1]);
 	menu_add_string(page, 3, string);
+
+	/* PID for wave frequency */
+#if 1
+	unsigned short int pwm_value;
+	long pid_value;
+
+	pwm_value = wave_pwm_get_value();
+	pid_wave.target = *value[1];
+	pid_wave.value = frequency;
+	pid_value = pid_calc(&pid_wave)/10;
+
+	sprintf(string, "p=%ld,V=%d", pid_value, pwm_value);
+	menu_add_string(page, 5, string);
+
+	if (pid_value >= 0) {
+		if (pwm_value > 5000 + pid_value)
+			pwm_value -= pid_value;
+		else
+			pwm_value = 5000;
+
+	} else {
+		pid_value *= -1;
+
+		if (pwm_value < 0xffff - pid_value)
+			pwm_value += pid_value;
+		else
+			pwm_value = 0xffff;
+	}
+
+	wave_pwm_value(pwm_value);
+#else
+	wave_pwm_value(5000);
+#endif 
 
 	/* menu operation */
 	if (now_screen == page-1) {
@@ -244,13 +302,17 @@ static void menu_display_wave(int page, void *wave_v)
 		menu_operation = 0;
 		menu_nagation_entry(page, entry_place);
 	}
-
 }		/* -----  end of function menu_display_wave  ----- */
 
 /* menu_display_empty -
  */
 static void menu_display_empty(int page, void *para)
 {
+	char string[32];
+
+	menu_title(page, "======Empty=====");
+	sprintf(string, "%ld", SysCtlClockGet());
+	menu_add_string(page, 1, string);
 }		/* -----  end of function menu_display_empty  ----- */
 
 /*  menu_start - initial all module for menu
@@ -355,6 +417,8 @@ void menu_init_wave(int page, MENU_WAVE_t *wave)
 {
 	menu_list[page-1].display = menu_display_wave;
 	menu_list[page-1].para = (void *)wave;
+	/* initialize pid for wave */
+	menu_init_pid();
 }		/* -----  end of function menu_init_wave  ----- */
 
 /* menu_display - display now screen

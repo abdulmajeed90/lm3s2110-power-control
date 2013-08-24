@@ -25,10 +25,16 @@
 #define WAVE_INT_OU GPIOPinWrite(WAVE_INT_PBASE, WAVE_INT_PIN, 0xff)
 #define WAVE_INT_OD GPIOPinWrite(WAVE_INT_PBASE, WAVE_INT_PIN, 0)
 
-#define	WAVE_32_PERIPH	SYSCTL_PERIPH_GPIOD
-#define	WAVE_32_PORT	GPIO_PORTD_BASE
-#define WAVE_32_PIN		GPIO_PIN_4
-#define WAVE_32_INT		INT_GPIOD
+/* #define	WAVE_32_PERIPH	SYSCTL_PERIPH_GPIOD
+ * #define	WAVE_32_PORT	GPIO_PORTD_BASE
+ * #define WAVE_32_PIN		GPIO_PIN_4
+ * #define WAVE_32_INT		INT_GPIOD
+ */
+#define	WAVE_32_PERIPH	SYSCTL_PERIPH_GPIOA
+#define	WAVE_32_PORT	GPIO_PORTA_BASE
+#define WAVE_32_PIN		GPIO_PIN_5
+#define WAVE_32_INT		INT_GPIOA
+
 #define WAVE_32_PREAD	(GPIOPinRead(WAVE_32_PORT, WAVE_32_PIN) & WAVE_32_PIN)
 
 #define	PWM_PIN_PERIPH	SYSCTL_PERIPH_GPIOA
@@ -44,6 +50,8 @@ extern void wave_spwm_data_step(unsigned int amplitude);
 extern void wave_spwm_load(unsigned long value);
 
 extern void wave_pwm(unsigned long period1, unsigned long period2);
+extern void wave_pwm_value(unsigned long value);
+extern unsigned long wave_pwm_get_value(void);
 
 extern void wave_capture(void (*capture_handler)(void));
 extern void wave_interrupt_start(void);

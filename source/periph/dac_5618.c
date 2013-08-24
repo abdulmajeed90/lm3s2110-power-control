@@ -8,7 +8,7 @@
 #include "src/gpio.h"
 #include "periph/dac_5618.h"
 
-#define DA_0832		1
+#define DA_0832		0
 
 /* DAC_init_gpio() - initialize DAC gpio
  */
@@ -16,8 +16,10 @@ void DAC_init_gpio(void)
 {
 	/* enable GPIO */
 	SysCtlPeripheralEnable(DAC_PERIPH);
+	SysCtlPeripheralEnable(DAC_DIN_PERIPH);
 	/* configure GPIO in output */
 	GPIOPinTypeGPIOOutput(DAC_PORT, DAC_PORT_MASK);
+	GPIOPinTypeGPIOOutput(DAC_DIN_PORT, DAC_DIN_MASK);
 
 #if DA_0832
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);

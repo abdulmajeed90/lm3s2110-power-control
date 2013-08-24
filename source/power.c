@@ -15,13 +15,12 @@
 
 /* module */
 /* #define MODULE_SPWM */
+#define MODULE_PWM
 #define MODULE_LCD
 #define MODULE_PLL
-#define MODULE_ADS
+#define MODULE_ADS 
 #define MODULE_CAP
 /* #define MODULE_DAC_5618 */
-/* #define MODULE_BUTTON */
-
 
 #ifdef MODULE_ADS
 #include "periph/ads1115.h"
@@ -45,11 +44,7 @@
 #include "periph/dac_5618.h"
 #endif
 
-#ifdef MODULE_BUTTON
-#include "periph/button.h"
-#endif
-
-#ifdef MODULE_SPWM
+#if defined(MODULE_SPWM) | defined(MODULE_PWM)
 #include "wave.h"
 #endif
 
@@ -103,12 +98,27 @@ void timer_cap32_handler(void)
 	if (WAVE_32_PREAD == 0) {
 		/* follower wave pin */
 		/* WAVE_INT_OU; */
-		wave_interrupt_load(timer_cap[TIMER_VALUE_DEEPIN]);
+		wave_interrupt_load(timer_cap[TIMER_VALUE_DEEPIN]>>1);
 		/* Enable the follower wave */
 		wave_interrupt_start();
 		/* timer interrupt to output follower wave */
 		timer_cmd = TIMER_CMD_FW;
 	}
+}
+
+void timer_cap32_counter_handler(void)
+{
+	static unsigned char i = 0;
+
+	wave_cap32_clean();
+
+	wave_cap32_stop();
+	timer_cap[i++] = wave_cap32_getvalue();
+	wave_cap32_load(0xffffffff);
+	wave_cap32_start();
+
+	/* get the wave form */
+	i = i%TIMER_VALUE_DEEPIN;
 }
 
 /* The spwm reset flag */
@@ -200,19 +210,26 @@ int main(void)
 	menu_start();
 #endif
 
-#ifdef MODULE_BUTTON
-#endif
-
 #ifdef MODULE_SPWM
 #include "src/pwm.h"
 	wave_spwm();
-#endif
-
 #ifdef MODULE_CAP
 	wave_interrupt_init(0xffff, timer_interrupt_handler);
 	/* 	wave_capture(timer_capture_handler); */
 	wave_cap32(timer_cap32_handler);
 #endif
+#endif
+
+#ifdef MODULE_PWM
+	wave_pwm(8000, 1);
+#ifdef MODULE_CAP
+	wave_interrupt_init(0xffff, timer_interrupt_handler);
+	/* 	wave_capture(timer_capture_handler); */
+	wave_cap32(timer_cap32_counter_handler);
+#endif
+#endif
+
+
 
 #ifdef MODULE_ADS
 	ads_init();
@@ -222,7 +239,8 @@ int main(void)
 	IntMasterEnable();
 
 #ifdef MODULE_DAC_5618
-	DAC_write_data(0x1ff, 1);
+	DAC_init_gpio();
+	DAC_write_data(0x1ff, 0);
 #endif
 
 
@@ -230,17 +248,26 @@ int main(void)
 #ifdef MODULE_LCD
 #ifdef MODULE_ADS
 	MENU_PARAMETER_t menu_para;
-	menu_init_parameter(1, &menu_para);
+	menu_init_parameter(2, &menu_para);
 #endif
 #ifdef MODULE_CAP
 	MENU_WAVE_t menu_wave;
 
-	menu_init_wave(2, &menu_wave);
+	menu_wave.frequency = 1000;
+	menu_init_wave(1, &menu_wave);
 #endif
 #endif
 
 	while(1) {
+#ifdef MODULE_DAC_5618
+		unsigned short int i;
+
+		DAC_write_data(i++, 0);
+		DAC_write_data(i++, 1);
+#endif
+
 #ifdef MODULE_LCD
+
 
 #ifdef MODULE_ADS
 		unsigned int ads_value;
@@ -276,8 +303,8 @@ int main(void)
 			tmp2 = (tmp2 + timer_cap[count]) >> 1;
 
 		/* load value to follower wave */
-		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2) >> 1;
-		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2) >> 1;
+		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2);
+		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2);
 
 #ifdef MODULE_SPWM
 		/* Sync spwm period with input */
@@ -286,9 +313,9 @@ int main(void)
 #endif
 #endif
 
-#endif
 		/* Display the screen */
 		menu_display();
+#endif
 	}
 
 #ifdef MODULE_LCD
