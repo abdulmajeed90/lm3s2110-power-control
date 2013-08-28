@@ -6,9 +6,9 @@
 
 #define LCD_CE		GPIO_PIN_0
 #define LCD_RST		GPIO_PIN_1
-#define LCD_DC		GPIO_PIN_2
-#define LCD_DAT		GPIO_PIN_3
-#define LCD_CLK		GPIO_PIN_4
+#define LCD_DC		GPIO_PIN_4
+#define LCD_DAT		GPIO_PIN_2
+#define LCD_CLK		GPIO_PIN_3
 #define LCD_PORT_MASK	(LCD_CE | LCD_RST | LCD_DC | \
 			LCD_DAT | LCD_CLK)
 
