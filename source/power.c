@@ -20,7 +20,7 @@
 #define MODULE_PLL
 #define MODULE_ADS 
 #define MODULE_CAP
-/* #define MODULE_DAC_5618 */
+#define MODULE_DAC_5618
 
 #ifdef MODULE_ADS
 #include "periph/ads1115.h"
@@ -260,7 +260,7 @@ int main(void)
 
 	while(1) {
 #ifdef MODULE_DAC_5618
-		unsigned short int i;
+		unsigned short int i = 0;
 
 		DAC_write_data(i++, 0);
 		DAC_write_data(i++, 1);

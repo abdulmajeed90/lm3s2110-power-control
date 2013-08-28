@@ -199,11 +199,20 @@ static void menu_display_parameter(int page, void *para_v)
 /* menu_init_pid -
  */
 PID_t pid_wave;
+PID_t pid_wave_large;
 void menu_init_pid(void)
 {
-	pid_wave.kp = 20;
-	pid_wave.ti = 10;
+/* 	pid_wave.kp = 20;
+ * 	pid_wave.ti = 10;
+ * 	pid_wave.td = 0;
+ */
+	pid_wave.kp = 40;
+	pid_wave.ti = 60;
 	pid_wave.td = 0;
+
+	pid_wave_large.kp = 4;
+	pid_wave_large.ti = 8;
+	pid_wave_large.td = 0;
 }		/* -----  end of function menu_init_pid  ----- */
 
 /* menu_display_wave -
@@ -239,32 +248,124 @@ static void menu_display_wave(int page, void *wave_v)
 	/* PID for wave frequency */
 #if 1
 	unsigned short int pwm_value;
-	long pid_value;
+	static long pid_value;
 
-	pwm_value = wave_pwm_get_value();
-	pid_wave.target = *value[1];
-	pid_wave.value = frequency;
-	pid_value = pid_calc(&pid_wave)/10;
+	if (labs(*value[1] - frequency) > 0) {
+		pwm_value = wave_pwm_get_value();
 
-	sprintf(string, "p=%ld,V=%d", pid_value, pwm_value);
-	menu_add_string(page, 5, string);
+		pid_wave_large.target = pid_wave.target = *value[1];
+		pid_wave_large.value = pid_wave.value = frequency;
+		/* To prevent target to large */
+		if (frequency < 500) {
+/* 			pid_value = (labs(*value[1] - frequency) * 8) / 10;
+ */
+			if ((pid_value = pid_calc(&pid_wave_large)) < -8000)
+				pid_value += 8000;
 
-	if (pid_value >= 0) {
-		if (pwm_value > 5000 + pid_value)
-			pwm_value -= pid_value;
-		else
-			pwm_value = 5000;
+		} else if (frequency > 5000) {
+/* 			pid_value = (-1 * labs(*value[1] - frequency) * 8) / 10;
+ */
+			pid_value = pid_calc(&pid_wave_large);
+/* 			if ((pid_value = pid_calc(&pid_wave_large)) > 8000)
+ * 				pid_value -= 8000;
+ */
+		} else if (*value[1] > frequency + 500) {
+			pid_value = pid_calc(&pid_wave_large);
+/* 			if ((pid_value = pid_calc(&pid_wave_large)) > 8000)
+ * 				pid_value -= 8000;
+ */
 
+			/* Clean the small pid */
+			pid_wave.perror = 0;
+			pid_wave.ierror = 0;
+			pid_wave.derror = 0;
+			pid_wave.last_error = 0;
+			pid_wave.prev_error = 0;
+
+/* 			if (*value[1] > frequency + 100) {
+ * 				pid_value = labs(*value[1] - frequency) * 6;
+ * 			} else
+ * 				pid_value = labs(*value[1] - frequency) * 6;
+ */
+
+		} else if (*value[1] < frequency - 500) {
+			if ((pid_value = pid_calc(&pid_wave_large)) < -8000)
+				pid_value += 8000;
+
+			/* Clean the small pid */
+			pid_wave.perror = 0;
+			pid_wave.ierror = 0;
+			pid_wave.derror = 0;
+			pid_wave.last_error = 0;
+			pid_wave.prev_error = 0;
+
+/* 			if (*value[1] < frequency - 500) {
+ * 				pid_value = -1 * labs(*value[1] - frequency) * 6;
+ * 			} else
+ * 				pid_value = -1 * labs(*value[1] - frequency) * 6;
+ */
+
+		} else {
+			pid_value = pid_calc(&pid_wave)/10;
+
+			/* Clean the large pid */
+			pid_wave_large.perror = 0;
+			pid_wave_large.ierror = 0;
+			pid_wave_large.derror = 0;
+			pid_wave_large.last_error = 0;
+			pid_wave_large.prev_error = 0;
+		}
+
+		/* pid value max */
+/* 		if (pid_value > 5000)
+ * 			pid_value = 5000;
+ * 		if (pid_value < -5000)
+ * 			pid_value = -5000;
+ */
+
+		sprintf(string, "p=%ld,V=%d", pid_value, pwm_value);
+		menu_add_string(page, 5, string);
+
+		if (pid_value >= 0) {
+			if (pwm_value > 5000 + pid_value)
+				pwm_value -= pid_value;
+			else {
+				pwm_value = 5000;
+				/* Clean the pid error */
+/* 				pid_wave.perror = 0;
+ * 				pid_wave.ierror = 0;
+ * 				pid_wave.derror = 0;
+ * 				pid_wave.last_error = 0;
+ * 				pid_wave.prev_error = 0;
+ */
+			}
+
+		} else {
+			pid_value = labs(pid_value);
+
+			if (pwm_value < 0xffff - pid_value)
+				pwm_value += pid_value;
+			else {
+				pwm_value = 0xffff;
+				/* Clean the pid error */
+/* 				pid_wave.perror = 0;
+ * 				pid_wave.ierror = 0;
+ * 				pid_wave.derror = 0;
+ * 				pid_wave.last_error = 0;
+ * 				pid_wave.prev_error = 0;
+ */
+			}
+		}
+
+		wave_pwm_value(pwm_value);
 	} else {
-		pid_value *= -1;
-
-		if (pwm_value < 0xffff - pid_value)
-			pwm_value += pid_value;
-		else
-			pwm_value = 0xffff;
+		pid_wave.target = frequency;
+		pid_wave.perror = 0;
+		pid_wave.ierror = 0;
+		pid_wave.derror = 0;
+		pid_wave.last_error = 0;
+		pid_wave.prev_error = 0;
 	}
-
-	wave_pwm_value(pwm_value);
 #else
 	wave_pwm_value(5000);
 #endif 

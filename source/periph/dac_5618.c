@@ -16,10 +16,10 @@ void DAC_init_gpio(void)
 {
 	/* enable GPIO */
 	SysCtlPeripheralEnable(DAC_PERIPH);
-	SysCtlPeripheralEnable(DAC_DIN_PERIPH);
+	SysCtlPeripheralEnable(DAC_2_PERIPH);
 	/* configure GPIO in output */
 	GPIOPinTypeGPIOOutput(DAC_PORT, DAC_PORT_MASK);
-	GPIOPinTypeGPIOOutput(DAC_DIN_PORT, DAC_DIN_MASK);
+	GPIOPinTypeGPIOOutput(DAC_2_PORT, DAC_2_MASK);
 
 #if DA_0832
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);

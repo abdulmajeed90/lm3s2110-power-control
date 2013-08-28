@@ -14,7 +14,7 @@
  */
 long pid_calc(PID_t *pid)
 {
-	pid->perror = (long)(pid->target - pid->value);
+	pid->perror = (long long)(pid->target - pid->value);
 	pid->ierror += pid->perror;
 	pid->derror = pid->last_error - pid->prev_error;
 	pid->prev_error = pid->last_error;
