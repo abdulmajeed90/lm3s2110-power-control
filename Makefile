@@ -131,6 +131,7 @@ ${COMPILER}/power.axf: ${COMPILER}/iic.o
 ${COMPILER}/power.axf: ${COMPILER}/ads1115.o
 ${COMPILER}/power.axf: ${COMPILER}/infrared.o
 ${COMPILER}/power.axf: ${COMPILER}/pid.o
+${COMPILER}/power.axf: ${COMPILER}/ina209.o
 
 #
 # power source end

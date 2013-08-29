@@ -19,6 +19,7 @@
 #include "lcd/display.h"
 #include "periph/button.h"
 #include "periph/infrared.h"
+#include "periph/ina209.h"
 #include "wave.h"
 #include "lcd/menu.h"
 #include "calculation/pid.h"
@@ -193,8 +194,15 @@ static void menu_display_parameter(int page, void *para_v)
 	/* no operation */
 	if (now_screen == page-1) 
 		menu_operation = 0;
-
 }		/* -----  end of static function menu_display_parameter  ----- */
+
+/* menu_config_ina - configure the ina209 register
+ */
+static void menu_config_ina(void)
+{
+	ina_init();
+	ina_set_reg(INA_ADDRESS, INA_CONF, INA_CAL);
+}		/* -----  end of static function menu_config_ina  ----- */
 
 /* menu_init_pid -
  */
@@ -276,6 +284,19 @@ static void menu_display_wave(int page, void *wave_v)
 			pid_wave.derror = 0;
 			pid_wave.last_error = 0;
 			pid_wave.prev_error = 0;
+		} else if (labs(*value[1] - frequency) <= 10){
+			if (*value[1] > frequency)
+				pid_value = pid_calc(&pid_wave_large) / 10;
+			else
+				pid_value = -1 * pid_calc(&pid_wave_large) / 10;
+
+			/* Clean the small pid */
+			pid_wave.perror = 0;
+			pid_wave.ierror = 0;
+			pid_wave.derror = 0;
+			pid_wave.last_error = 0;
+			pid_wave.prev_error = 0;
+
 		} else {
 			pid_value = pid_calc(&pid_wave)/10;
 
@@ -352,6 +373,39 @@ static void menu_display_wave(int page, void *wave_v)
 		menu_nagation_entry(page, entry_place);
 	}
 }		/* -----  end of function menu_display_wave  ----- */
+
+/* menu_display_ina -  
+*/
+static void menu_display_ina(int page, void *para)
+{
+	char string[32];
+/* 
+ * 	ina_set_reg(INA_ADDRESS, INA_CONF, INA_CAL);
+ * 	ina_write(INA_ADDRESS, POWER_WARNING, 0x1253);
+ */
+
+	while (!ina_status(W_CONVER_READY));
+
+	sprintf(string, "%4x,%4x,%4x",
+			ina_read(INA_ADDRESS, BUS_VOLTAGE),
+			ina_read(INA_ADDRESS, STATUS_REG),
+			ina_read(INA_ADDRESS, POWER_REG));
+	menu_add_string(page, 0, string);
+	sprintf(string, "%4x,%4x,%4x",
+			ina_read(INA_ADDRESS, SHUNT_VOLTAGE),
+			ina_read(INA_ADDRESS, POWER_WARNING),
+			ina_read(INA_ADDRESS, POWER_OVER_LIMIT));
+	menu_add_string(page, 1, string);
+	sprintf(string, "%4x,%4x,%4x",
+			ina_read(INA_ADDRESS, CURRENT_REG),
+			ina_read(INA_ADDRESS, BUS_MAX_PEAK),
+			ina_read(INA_ADDRESS, BUS_MIN_PEAK));
+	menu_add_string(page, 2, string);
+
+	/* no operation */
+	if (now_screen == page-1) 
+		menu_operation = 0;
+}		/* -----  end of static function menu_display_ina  ----- */
 
 /* menu_display_empty -
  */
@@ -469,6 +523,15 @@ void menu_init_wave(int page, MENU_WAVE_t *wave)
 	/* initialize pid for wave */
 	menu_init_pid();
 }		/* -----  end of function menu_init_wave  ----- */
+
+/* menu_init_ina - display the ina209 parameter
+ */
+void menu_init_ina(int page, MENU_INA_t *ina)
+{
+	menu_list[page-1].display = menu_display_ina;
+	menu_list[page-1].para = (void *)ina;
+	menu_config_ina();
+}		/* -----  end of function menu_init_ina  ----- */
 
 /* menu_display - display now screen
  * display now page an other page will stop.

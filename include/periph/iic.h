@@ -60,9 +60,11 @@
 
 extern void start();
 extern void stop();
+extern void iic_write_m(unsigned char byte); 
 extern void Send1byte(unsigned int  byte);
 extern unsigned int Read1byte();
 extern unsigned char ADSGetByte();
+extern unsigned char iic_read_m();
 extern void startB();
 extern void stopB();
 extern void Send1byteB(unsigned int  byte);

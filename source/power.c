@@ -18,9 +18,10 @@
 #define MODULE_PWM
 #define MODULE_LCD
 #define MODULE_PLL
-#define MODULE_ADS 
+/* #define MODULE_ADS */
 #define MODULE_CAP
 #define MODULE_DAC_5618
+#define MODULE_INA209
 
 #ifdef MODULE_ADS
 #include "periph/ads1115.h"
@@ -229,8 +230,6 @@ int main(void)
 #endif
 #endif
 
-
-
 #ifdef MODULE_ADS
 	ads_init();
 #endif
@@ -248,13 +247,19 @@ int main(void)
 #ifdef MODULE_LCD
 #ifdef MODULE_ADS
 	MENU_PARAMETER_t menu_para;
+
 	menu_init_parameter(2, &menu_para);
 #endif
 #ifdef MODULE_CAP
 	MENU_WAVE_t menu_wave;
 
 	menu_wave.frequency = 1000;
-	menu_init_wave(1, &menu_wave);
+	menu_init_wave(2, &menu_wave);
+#endif
+#ifdef MODULE_INA209
+	MENU_INA_t menu_ina;
+
+	menu_init_ina(1, &menu_ina);
 #endif
 #endif
 

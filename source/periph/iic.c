@@ -27,7 +27,7 @@ void stop()
 	SCL_L;
 }
 
-void Send1byte(unsigned int byte)
+void iic_write_m(unsigned char byte)
 {
 	unsigned char cByte = byte;
 	unsigned char i=0;
@@ -42,15 +42,16 @@ void Send1byte(unsigned int byte)
 		SCL_H;
 		SCL_L;
 	}
-	/* SDA_IN; */
 	SDA_H;
+	SDA_IN;
 	SCL_H;
+	while (SDA_READ);
 	SCL_L;
 	SDA_OUT;
 }
 
 /* unsigned char Read1byte() */
-unsigned char ADSGetByte()
+unsigned char iic_read_m()
 {
 	unsigned char i=0;
 
@@ -68,11 +69,16 @@ unsigned char ADSGetByte()
 
 	}
 	SDA_Out;
+/* 	SCL_L;
+ * 	SDA_H;
+ * 	SCL_H;
+ */
 	SCL_L;
 	SDA_L;
 	SCL_H;
 	SCL_L;
 	SDA_H;
+
 	return temp;
 }
 
@@ -100,6 +106,7 @@ unsigned int ads_read_count(unsigned int count)
 	SCL_H;
 	SCL_L;
 	SDA_H;
+
 	return temp;
 }
 

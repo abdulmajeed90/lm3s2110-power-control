@@ -65,7 +65,7 @@ void ads_confige(unsigned int channel)
 	unsigned char i=0;
 	start();
 	for(i=0;i<4;i++) {
-		Send1byte(Initdata[i]);
+		iic_write_m(Initdata[i]);
 	}
 
 	stop();
@@ -89,7 +89,7 @@ void ads_point_reg(void)
 	start();
 	for(i=0;i<2;i++)
 	{
-		Send1byte(Initdata[i]);
+		iic_write_m(Initdata[i]);
 	}
 
 	/* IIC_write(Initdata, 0, 16); */
@@ -117,9 +117,9 @@ unsigned int ads_read(unsigned int channel)
 
 #if 1
 	start();
-	Send1byte(0x91); //地址+读
-	result|=ADSGetByte()<<8;
-	result|=ADSGetByte();
+	iic_write_m(0x91); //地址+读
+	result|=iic_read_m()<<8;
+	result|=iic_read_m();
 	/* result = ads_read_count(17); */
 	/* result = ads_read_count(16); */
 	stop();
