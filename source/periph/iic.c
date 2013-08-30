@@ -45,7 +45,10 @@ void iic_write_m(unsigned char byte)
 	SDA_H;
 	SDA_IN;
 	SCL_H;
-	while (SDA_READ);
+	while (SDA_READ) {
+		if (i-- == 0)
+			break;
+	}
 	SCL_L;
 	SDA_OUT;
 }

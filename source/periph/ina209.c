@@ -17,9 +17,6 @@
 #include "periph/iic.h"
 #include "periph/ina209.h"
 
-#define GET_MSB(d) ((unsigned char)(d & 0xff00)>>8)
-#define GET_LSB(d) ((unsigned char)(d & 0xff))
-
 /* ina_init - initialize ina209
  */
 void ina_init(void)
@@ -38,8 +35,8 @@ void ina_write(unsigned char addr, unsigned char reg, unsigned int dat)
 	start();
 	iic_write_m(addr);
 	iic_write_m(reg);
-	iic_write_m(GET_MSB(dat));
-	iic_write_m(GET_LSB(dat));
+	iic_write_m(dat >> 8);
+	iic_write_m(dat & 0xff);
 	stop();
 }		/* -----  end of function ina_write  ----- */
 

@@ -202,6 +202,10 @@ static void menu_config_ina(void)
 {
 	ina_init();
 	ina_set_reg(INA_ADDRESS, INA_CONF, INA_CAL);
+	ina_write(INA_ADDRESS, BUS_OVER_WARNING, 0xfffc);
+	ina_write(INA_ADDRESS, POWER_OVER_LIMIT, 0xffff);
+	ina_write(INA_ADDRESS, CRITICAL_DAC_POSTIVE, 0x0fff);
+	ina_write(INA_ADDRESS, CRITICAL_DAC_NEGATIVE, 0x0fff);
 }		/* -----  end of static function menu_config_ina  ----- */
 
 /* menu_init_pid -
@@ -384,23 +388,43 @@ static void menu_display_ina(int page, void *para)
  * 	ina_write(INA_ADDRESS, POWER_WARNING, 0x1253);
  */
 
-	while (!ina_status(W_CONVER_READY));
+/* 	while (!ina_status(W_CONVER_READY));
+ */
 
 	sprintf(string, "%4x,%4x,%4x",
-			ina_read(INA_ADDRESS, BUS_VOLTAGE),
+			ina_read(INA_ADDRESS, BUS_VOLTAGE)>>3,
 			ina_read(INA_ADDRESS, STATUS_REG),
 			ina_read(INA_ADDRESS, POWER_REG));
 	menu_add_string(page, 0, string);
-	sprintf(string, "%4x,%4x,%4x",
-			ina_read(INA_ADDRESS, SHUNT_VOLTAGE),
-			ina_read(INA_ADDRESS, POWER_WARNING),
-			ina_read(INA_ADDRESS, POWER_OVER_LIMIT));
+
+	sprintf(string, "%4d,%4d,%4d",
+			(short)ina_read(INA_ADDRESS, SHUNT_VOLTAGE),
+			(short)ina_read(INA_ADDRESS, SHUNT_POSITIVE_PEAK),
+			(short)ina_read(INA_ADDRESS, SHUNT_NEGATIVE_PEAK));
 	menu_add_string(page, 1, string);
-	sprintf(string, "%4x,%4x,%4x",
-			ina_read(INA_ADDRESS, CURRENT_REG),
+
+	sprintf(string, "%5d,%4x,%4x",
+			(short)ina_read(INA_ADDRESS, CURRENT_REG),
 			ina_read(INA_ADDRESS, BUS_MAX_PEAK),
-			ina_read(INA_ADDRESS, BUS_MIN_PEAK));
+			ina_read(INA_ADDRESS, POWER_PEAK));
 	menu_add_string(page, 2, string);
+
+	sprintf(string, "%4x,%4x,%4x",
+			ina_read(INA_ADDRESS, CRITICAL_DAC_POSTIVE),
+			ina_read(INA_ADDRESS, CRITICAL_DAC_NEGATIVE),
+			ina_read(INA_ADDRESS, BUS_UNDER_WARNING));
+	menu_add_string(page, 3, string);
+
+	sprintf(string, "P=%d,U=%d,I=%d",
+			ina_read(INA_ADDRESS, POWER_REG) * POWER_LSB,
+			(short)(ina_read(INA_ADDRESS, BUS_VOLTAGE))/8,
+
+
+/* 			(ina_read(INA_ADDRESS, BUS_MAX_PEAK) >> 3) * 4,
+ */
+			(short)ina_read(INA_ADDRESS, CURRENT_REG) * CURRENT_LSB);
+
+	menu_add_string(page, 4, string);
 
 	/* no operation */
 	if (now_screen == page-1) 
