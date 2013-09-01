@@ -16,8 +16,7 @@
 /* module */
 #define MODULE_SPWM
 /* #define MODULE_PWM */
-/* #define MODULE_LCD
- */
+#define MODULE_LCD
 #define MODULE_PLL
 /* #define MODULE_ADS
  */
@@ -103,7 +102,7 @@ void timer_cap32_handler(void)
 
 	if (WAVE_32_PREAD == 0) {
 		/* follower wave pin */
-		/* WAVE_INT_OU; */
+		WAVE_INT_OU;
 		wave_interrupt_load(timer_cap[TIMER_VALUE_DEEPIN]>>1);
 		/* Enable the follower wave */
 		wave_interrupt_start();

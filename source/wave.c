@@ -85,8 +85,7 @@ void time_spwm_handler(void)
 		/* Output postive period */
 		wave_flag=1;
 		/* Close timer */
-/* 		TimerDisable(TIMER2_BASE, TIMER_A);
- */
+		TimerDisable(TIMER2_BASE, TIMER_A);
 	}
 
 }
