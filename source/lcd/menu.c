@@ -340,7 +340,8 @@ static void menu_display_wave(int page, void *wave_v)
 		pid_wave.prev_error = 0;
 	}
 #else
-	wave_pwm_value(5000);
+/* 	wave_pwm_value(5000);
+ */
 #endif 
 
 	/* menu operation */

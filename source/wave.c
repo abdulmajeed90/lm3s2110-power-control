@@ -21,32 +21,40 @@
 #include "system/sys_pwm.h"
 #include "data/spwm.h"
 
-unsigned char spwm_a[1024];
-unsigned char spwm_b[1024];
+/* #define PHASE 100
+ */
+#define PHASE 0
+unsigned char spwm_a[2024];
+unsigned char spwm_b[2024];
 /* unsigned char spwm_step=12; */
 /* unsigned char spwm_step=24; */
-unsigned char spwm_step=50;
+unsigned char spwm_step=32;
 unsigned char spwm_value=0xf;
 unsigned char spwm_flag=0;
 unsigned int spwm_count_u=10;
 unsigned int spwm_count_d=10;
+int spwm_phase_a=PHASE;
+int spwm_phase_b=PHASE;
 void pwm_spwm_handler(void)
 {
-
 	PWMGenIntClear(PWM_BASE, PWM_GEN_0, PWM_INT_GEN_0);
 
 	/* Output the switch wave */
 	if (spwm_flag) {
+/* 		if (spwm_phase_a-- == 0)
+ */
 			PWM_OD;
 	} else {
+/* 		if (spwm_phase_b-- == 0)
+ */
 			PWM_OU;
 	}
 
 	/* 	IntDisable(INT_PWM0);
 	*/
 	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_value);
-
 }
+
 unsigned int spwm_reset=0;
 void time_spwm_handler(void)
 {
@@ -59,6 +67,9 @@ void time_spwm_handler(void)
 		i=j=0;
 		spwm_reset=0;
 		wave_flag=1;
+/* 		spwm_phase_a = PHASE;
+ * 		spwm_phase_b = PHASE;
+ */
 	}
 
 	if (wave_flag) {
@@ -85,24 +96,42 @@ void time_spwm_handler(void)
 		/* Output postive period */
 		wave_flag=1;
 		/* Close timer */
-		TimerDisable(TIMER2_BASE, TIMER_A);
+/* 		TimerDisable(TIMER2_BASE, TIMER_A);
+ */
+		/* Reloade wave phase */
+		spwm_phase_a = PHASE;
+		spwm_phase_b = PHASE;
 	}
 
 }
 
 /* wave_spwm_data - initialize the sin data with amplitude
-*/
+ */
 void wave_spwm_data(unsigned int amplitude)
 {
 	int n;
+/* 
+ * 	for (n=0; n < 512; n++) {
+ * 		spwm_a[n+PHASE] = spwm_data[n]/amplitude;
+ * 		spwm_a[(1023+PHASE)-n] = spwm_data[n]/amplitude;
+ * 	}
+ * 	for (n=0; n < 512; n++) {
+ * 		spwm_b[n+PHASE] = 0xff - (spwm_data[n]/amplitude);
+ * 		spwm_b[(1023+PHASE)-n] = 0xff - (spwm_data[n]/amplitude);
+ * 	}
+ * 	for (n=0; n<PHASE; n++) {
+ * 		spwm_a[PHASE-1-n] = 0xff - (spwm_data[n]/amplitude);
+ * 		spwm_b[PHASE-1-n] = spwm_data[n]/amplitude;
+ * 	}
+ */
 
 	for (n=0; n < 512; n++) {
 		spwm_a[n] = spwm_data[n]/amplitude;
-		spwm_a[1023-n] = spwm_data[n]/amplitude;
+		spwm_a[(1023)-n] = spwm_data[n]/amplitude;
 	}
 	for (n=0; n < 512; n++) {
 		spwm_b[n] = 0xff - (spwm_data[n]/amplitude);
-		spwm_b[1023-n] = 0xff - (spwm_data[n]/amplitude);
+		spwm_b[(1023)-n] = 0xff - (spwm_data[n]/amplitude);
 	}
 }		/* -----  end of function wave_spwm_data  ----- */
 
@@ -159,8 +188,10 @@ void wave_spwm(void)
 	PWM_init(&pwm1);
 /* 	IntEnable(INT_PWM0);
  */
+
 	/* Configure the periority of interrupt */
-	IntPrioritySet(INT_PWM0, 3);
+/* 	IntPrioritySet(INT_PWM0, 3);
+ */
 #endif
 
 #if 1

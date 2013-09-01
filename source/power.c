@@ -86,8 +86,7 @@ void timer_capture_handler(void)
 }
 #endif
 
-void timer_cap32_handler(void)
-{
+void timer_cap32_handler(void) {
 	static unsigned char i = 0;
 
 	wave_cap32_clean();
@@ -103,7 +102,7 @@ void timer_cap32_handler(void)
 	if (WAVE_32_PREAD == 0) {
 		/* follower wave pin */
 		WAVE_INT_OU;
-		wave_interrupt_load(timer_cap[TIMER_VALUE_DEEPIN]>>1);
+		wave_interrupt_load((timer_cap[TIMER_VALUE_DEEPIN]>>1));
 		/* Enable the follower wave */
 		wave_interrupt_start();
 		/* timer interrupt to output follower wave */
@@ -259,6 +258,7 @@ int main(void)
 
 	menu_wave.frequency = 1000;
 	menu_init_wave(1, &menu_wave);
+
 #endif
 #ifdef MODULE_INA209
 	MENU_INA_t menu_ina;
@@ -320,7 +320,9 @@ int main(void)
 /* 		wave_spwm_load((tmp1+tmp2)/85);
  * 		wave_spwm_load((tmp1+tmp2)/42);
  */
-		wave_spwm_load((tmp1+tmp2)/40);
+		wave_spwm_load((tmp1+tmp2)/64);
+
+
 #endif
 #endif
 
