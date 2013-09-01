@@ -61,7 +61,6 @@ void time_spwm_handler(void)
 		wave_flag=1;
 	}
 
-
 	if (wave_flag) {
 		spwm_value=spwm_a[i]+0x1;
 		i+=spwm_step;
@@ -86,7 +85,8 @@ void time_spwm_handler(void)
 		/* Output postive period */
 		wave_flag=1;
 		/* Close timer */
-/* 		TimerDisable(TIMER2_BASE, TIMER_A); */
+/* 		TimerDisable(TIMER2_BASE, TIMER_A);
+ */
 	}
 
 }

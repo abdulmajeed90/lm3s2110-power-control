@@ -258,7 +258,7 @@ static void menu_display_wave(int page, void *wave_v)
 	menu_add_string(page, 3, string);
 
 	/* PID for wave frequency */
-#if 1
+#if 0
 	unsigned short int pwm_value;
 	static long pid_value;
 

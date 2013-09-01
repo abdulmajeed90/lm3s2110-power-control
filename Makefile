@@ -97,9 +97,14 @@ gdbtui:
 
 tools:
 	cd tools;make
-cscope:
-	ctags -R
-	cscope -RqkbvI /usr/local/arm/luminary/arm-luminary-eabi/include
+tags:
+	ctags -I __THROW -I __attribute_pure__ -I __nonnull -I __attribute__ --file-scope=yes --langmap=c:+.h --languages=c,c++ --links=yes --c-kinds=+p --c++-kinds=+p --fields=+iaS --extra=+q -R /usr/local/arm/luminary ./
+	find /usr/local/arm/luminary ./ \
+		-name "*.h" -o -name "*.c" -o -name "*.cc" -name "*.cpp" \
+		> cscope.files
+	cscope -qbv -i cscope.files
+#	ctags -R
+#	cscope -RqkbvI /usr/local/arm/luminary/arm-luminary-eabi/include
 #cscope -RqkbvI /opt/CodeSourcery/Sourcery_CodeBench_Lite_for_ARM_EABI/arm-none-eabi/include/
 #
 # The rule to create the target directory.
@@ -132,6 +137,7 @@ ${COMPILER}/power.axf: ${COMPILER}/ads1115.o
 ${COMPILER}/power.axf: ${COMPILER}/infrared.o
 ${COMPILER}/power.axf: ${COMPILER}/pid.o
 ${COMPILER}/power.axf: ${COMPILER}/ina209.o
+${COMPILER}/power.axf: ${COMPILER}/cs5463.o
 
 #
 # power source end

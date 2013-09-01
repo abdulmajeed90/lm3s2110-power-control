@@ -14,14 +14,17 @@
 #include "src/gpio.h"
 
 /* module */
-/* #define MODULE_SPWM */
-#define MODULE_PWM
-#define MODULE_LCD
+#define MODULE_SPWM
+/* #define MODULE_PWM */
+/* #define MODULE_LCD
+ */
 #define MODULE_PLL
-/* #define MODULE_ADS */
+/* #define MODULE_ADS
+ */
 #define MODULE_CAP
-#define MODULE_DAC_5618
-#define MODULE_INA209
+/* #define MODULE_DAC_5618 */
+/* #define MODULE_INA209
+ */
 
 #ifdef MODULE_ADS
 #include "periph/ads1115.h"
@@ -61,6 +64,7 @@
 volatile unsigned long timer_cap[TIMER_VALUE_DEEPIN+2];
 volatile unsigned int timer_cmd = 0;
 volatile unsigned int wave_pon = 0;
+#if 0
 void timer_capture_handler(void)
 {
 	static unsigned char i = 0;
@@ -81,6 +85,7 @@ void timer_capture_handler(void)
 		timer_cmd = TIMER_CMD_FW;
 	}
 }
+#endif
 
 void timer_cap32_handler(void)
 {
@@ -143,7 +148,7 @@ void timer_interrupt_handler(void)
 
 			/* Start scan postive or nagetive */
 			timer_cmd = TIMER_CMD_SCAN;
-			wave_interrupt_load(timer_cap[TIMER_VALUE_DEEPIN+1]);
+			wave_interrupt_load(timer_cap[TIMER_VALUE_DEEPIN+1]/2);
 			wave_interrupt_start();
 			break;
 		case TIMER_CMD_SCAN:
@@ -254,7 +259,7 @@ int main(void)
 	MENU_WAVE_t menu_wave;
 
 	menu_wave.frequency = 1000;
-	menu_init_wave(2, &menu_wave);
+	menu_init_wave(1, &menu_wave);
 #endif
 #ifdef MODULE_INA209
 	MENU_INA_t menu_ina;
@@ -271,7 +276,6 @@ int main(void)
 		DAC_write_data(i++, 1);
 #endif
 
-#ifdef MODULE_LCD
 
 
 #ifdef MODULE_ADS
@@ -307,16 +311,24 @@ int main(void)
 		for (tmp2 = timer_cap[1], count=3; count<TIMER_VALUE_DEEPIN; count+=2)
 			tmp2 = (tmp2 + timer_cap[count]) >> 1;
 
-		/* load value to follower wave */
-		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2);
-		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2);
+		/* the top array is period */
+		timer_cap[TIMER_VALUE_DEEPIN] = (tmp1<tmp2?tmp1:tmp2);
+		timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2);
+
 
 #ifdef MODULE_SPWM
 		/* Sync spwm period with input */
-		/* 		wave_spwm_load((tmp1+tmp2)/85); */
-		/* 		wave_spwm_load((tmp1+tmp2)/42); */
+/* 		wave_spwm_load((tmp1+tmp2)/85);
+ * 		wave_spwm_load((tmp1+tmp2)/42);
+ */
+		wave_spwm_load((tmp1+tmp2)/40);
 #endif
 #endif
+
+#ifdef MODULE_LCD
+		/* load value to follower wave */
+		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN];
+		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1];
 
 		/* Display the screen */
 		menu_display();
