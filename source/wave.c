@@ -186,8 +186,7 @@ void wave_spwm(void)
 	pwm1.handler = pwm_spwm_handler;
 	pwm1.interrupt = INT_PWM0;
 	PWM_init(&pwm1);
-/* 	IntEnable(INT_PWM0);
- */
+	IntEnable(INT_PWM0);
 
 	/* Configure the periority of interrupt */
 /* 	IntPrioritySet(INT_PWM0, 3);

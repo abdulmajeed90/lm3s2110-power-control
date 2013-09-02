@@ -15,7 +15,8 @@
 
 /* module */
 #define MODULE_SPWM
-/* #define MODULE_PWM */
+/* #define MODULE_PWM
+ */
 #define MODULE_LCD
 #define MODULE_PLL
 /* #define MODULE_ADS
@@ -321,6 +322,7 @@ int main(void)
  * 		wave_spwm_load((tmp1+tmp2)/42);
  */
 		wave_spwm_load((tmp1+tmp2)/64);
+
 
 
 #endif
