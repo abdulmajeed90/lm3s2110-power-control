@@ -432,6 +432,69 @@ static void menu_display_ina(int page, void *para)
 		menu_operation = 0;
 }		/* -----  end of static function menu_display_ina  ----- */
 
+/* menu_display_spwm_double -
+ */
+#define MENU_SPWM_ENTRY_TOP		1
+#define MENU_SPWM_ENTRY_BOTTOM	2
+static void menu_display_spwm_double(int page, void *para)
+{
+	static unsigned int entry_place = MENU_SPWM_ENTRY_TOP;
+	char string[32];
+	unsigned int *value[MENU_SPWM_ENTRY_BOTTOM - MENU_SPWM_ENTRY_TOP + 1];
+
+	value[0] = &(((MENU_SPWM_DOUBLE_t *)para)->amplitude);
+	value[1] = &(((MENU_SPWM_DOUBLE_t *)para)->delay);
+
+	/* Load spwm data */
+	wave_spwm_read_data(value[0], value[1]);
+	
+
+	menu_title(page, "======SPWM======");
+	sprintf(string, "Amplitude: %d", *value[0]);
+	menu_add_string(page, 1, string);
+	sprintf(string, "Delay: %d", *value[1]);
+	menu_add_string(page, 2, string);
+
+	/* menu operation */
+	if (now_screen == page-1) {
+		switch (menu_operation) {
+			case MENU_DOWN: /* select entry */
+				if (entry_place < MENU_SPWM_ENTRY_BOTTOM) {
+					menu_nagation_entry(page, entry_place++);
+				}
+				break;
+
+			case MENU_UP:
+				if (entry_place > MENU_SPWM_ENTRY_TOP) {
+					menu_nagation_entry(page, entry_place--);
+				}
+				break;
+
+			case MENU_INC: /* date increase and decrease */
+				(*value[entry_place - MENU_SPWM_ENTRY_TOP])++;
+				break;
+
+			case MENU_DEC:
+				(*value[entry_place - MENU_SPWM_ENTRY_TOP])--;
+				break;
+				
+			case MENU_CONFIRM:
+				menu_input(page, value[entry_place-MENU_SPWM_ENTRY_TOP], entry_place);
+				break;
+
+			default:
+				break;
+		} 
+		if (menu_operation != 0) {
+			menu_operation = 0;
+			wave_spwm_load_data(*value[0], *value[1]);
+			/* Refresh */
+			wave_spwm_double_data();
+		} 
+		menu_nagation_entry(page, entry_place);
+	}
+}		/* -----  end of function menu_display_spwm_double  ----- */
+
 /* menu_display_empty -
  */
 static void menu_display_empty(int page, void *para)
@@ -557,6 +620,14 @@ void menu_init_ina(int page, MENU_INA_t *ina)
 	menu_list[page-1].para = (void *)ina;
 	menu_config_ina();
 }		/* -----  end of function menu_init_ina  ----- */
+
+/* menu_init_spwm_double -
+ */
+void menu_init_spwm_double(int page, MENU_SPWM_DOUBLE_t *para)
+{
+	menu_list[page-1].display = menu_display_spwm_double;
+	menu_list[page-1].para = (void *)para;
+}		/* -----  end of function menu_init_spwm_double  ----- */
 
 /* menu_display - display now screen
  * display now page an other page will stop.

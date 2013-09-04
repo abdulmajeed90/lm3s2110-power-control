@@ -4,6 +4,7 @@
  * Copyright (c) 2013, chenchacha
  * 
  */
+#include <string.h>
 #include "hw_ints.h"
 #include "hw_memmap.h"
 #include "hw_types.h"
@@ -24,11 +25,14 @@
 /* #define PHASE 100
  */
 #define PHASE 0
-unsigned char spwm_a[2024];
-unsigned char spwm_b[2024];
+#define SPWM_DATA_BUFFER_DEEPIN 2048
+unsigned char spwm_a[SPWM_DATA_BUFFER_DEEPIN] = {0};
+unsigned char spwm_b[SPWM_DATA_BUFFER_DEEPIN] = {0};
 /* unsigned char spwm_step=12; */
 /* unsigned char spwm_step=24; */
 unsigned char spwm_step=32;
+/* unsigned char spwm_step=3;
+ */
 unsigned char spwm_value=0xf;
 unsigned char spwm_flag=0;
 unsigned int spwm_count_u=10;
@@ -41,12 +45,8 @@ void pwm_spwm_handler(void)
 
 	/* Output the switch wave */
 	if (spwm_flag) {
-/* 		if (spwm_phase_a-- == 0)
- */
 			PWM_OD;
 	} else {
-/* 		if (spwm_phase_b-- == 0)
- */
 			PWM_OU;
 	}
 
@@ -72,6 +72,7 @@ void time_spwm_handler(void)
  */
 	}
 
+	/* Positive and negative */
 	if (wave_flag) {
 		spwm_value=spwm_a[i]+0x1;
 		i+=spwm_step;
@@ -82,14 +83,14 @@ void time_spwm_handler(void)
 		spwm_flag=0;
 	}
 
-	if (i > 1024) {
+	if (i > (SPWM_DATA_BUFFER_DEEPIN/2)) {
 		i = 0;
 		/* Enable pwm interrupt for switch wave */
 		/* 		IntEnable(INT_PWM0); */
 		/* Output negative period */
 		wave_flag=0;
 	}
-	if (j > 1024) {
+	if (j > (SPWM_DATA_BUFFER_DEEPIN)/2) {
 		j=0;
 		/* Enable pwm interrupt for switch wave */
 		/* 		IntEnable(INT_PWM0); */
@@ -102,12 +103,54 @@ void time_spwm_handler(void)
 		spwm_phase_a = PHASE;
 		spwm_phase_b = PHASE;
 	}
-
 }
+
+/* timer_spwm_double_handler -
+ */
+void timer_spwm_double_handler(void)
+{
+	static unsigned int i=0;
+
+	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
+
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_a[i]+0x10);
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_1, spwm_b[SPWM_DATA_BUFFER_DEEPIN-1-i]+0x10);
+
+	i+=spwm_step;
+	if (i >= SPWM_DATA_BUFFER_DEEPIN) {
+		i = 0;
+	}
+}		/* -----  end of function timer_spwm_double_handler  ----- */
+
+/* wave_spwm_load_data -
+ */
+#define SPWM_DATA_STEP	200
+unsigned int spwm_amplitude;
+unsigned int spwm_delay;
+void wave_spwm_load_data(unsigned int amplitude, unsigned int delay)
+{
+	if (amplitude > SPWM_DATA_STEP)
+		spwm_amplitude = SPWM_DATA_STEP;
+	else
+		spwm_amplitude = amplitude;
+
+	if (delay > SPWM_DATA_BUFFER_DEEPIN)
+		spwm_delay = SPWM_DATA_BUFFER_DEEPIN;
+	else
+		spwm_delay = delay;
+}		/* -----  end of function wave_spwm_load_data  ----- */
+
+/* wave_spwm_read_data -
+ */
+void wave_spwm_read_data(unsigned int *amplitude, unsigned int *delay)
+{
+	*amplitude = spwm_amplitude;
+	*delay = spwm_delay;
+}		/* -----  end of function wave_spwm_read_data  ----- */
 
 /* wave_spwm_data - initialize the sin data with amplitude
  */
-void wave_spwm_data(unsigned int amplitude)
+void wave_spwm_data(void)
 {
 	int n;
 /* 
@@ -124,36 +167,67 @@ void wave_spwm_data(unsigned int amplitude)
  * 		spwm_b[PHASE-1-n] = spwm_data[n]/amplitude;
  * 	}
  */
+	memset(spwm_a, 0, sizeof (spwm_a));
 
 	for (n=0; n < 512; n++) {
-		spwm_a[n] = spwm_data[n]/amplitude;
-		spwm_a[(1023)-n] = spwm_data[n]/amplitude;
+		spwm_a[n] = spwm_data[n];
+		spwm_a[(1023)-n] = spwm_data[n];
 	}
 	for (n=0; n < 512; n++) {
-		spwm_b[n] = 0xff - (spwm_data[n]/amplitude);
-		spwm_b[(1023)-n] = 0xff - (spwm_data[n]/amplitude);
+		spwm_b[n] = 0xff - (spwm_data[n]);
+		spwm_b[(1023)-n] = 0xff - (spwm_data[n]);
 	}
 }		/* -----  end of function wave_spwm_data  ----- */
+
+/* wave_spwm_double_data -
+ */
+void wave_spwm_double_data(void)
+{
+	int n;
+	unsigned long tmp;
+
+	memset(spwm_a, 0, sizeof (spwm_a));
+	memset(spwm_b, 0, sizeof (spwm_b));
+
+	/* The channel 1 data */
+	for (n=0; n < 512; n++) {
+		tmp = ((unsigned long)spwm_data[n] * spwm_amplitude) / SPWM_DATA_STEP / 2;
+		spwm_a[n] = (unsigned char)tmp+0x7f;
+		spwm_a[1023-n] = (unsigned char)tmp+0x7f;
+		spwm_a[1024+n] = 0x7f-(unsigned char)tmp;
+		spwm_a[2047-n] = 0x7f-(unsigned char)tmp;
+	}
+	/* The channel 2 data */
+	for (n=0; n < 512; n++) {
+		tmp = ((unsigned long)spwm_data[n] * spwm_amplitude) / SPWM_DATA_STEP / 2;
+/* 		spwm_b[n+spwm_delay] = (unsigned char)tmp;
+ * 		spwm_b[1023+spwm_delay-n] = (unsigned char)tmp;
+ */
+		spwm_b[n+spwm_delay] = (unsigned char)tmp+0x7f;
+		spwm_b[1023+spwm_delay-n] = (unsigned char)tmp+0x7f;
+		spwm_b[(1024+spwm_delay+n)%2048] = 0x7f-(unsigned char)tmp;
+		spwm_b[(2047+spwm_delay-n)%2048] = 0x7f-(unsigned char)tmp;
+	}
+}		/* -----  end of function wave_spwm_double_data  ----- */
 
 /* wave_spwm_data_step - initialize the sin data with amplitude with step
  * The wave step is 64.
  */
-void wave_spwm_data_step(unsigned int amplitude)
+void wave_spwm_data_step(void)
 {
 	int n;
 	unsigned long tmp;
 
 	for (n=0; n < 512; n++) {
-		tmp = ((unsigned long)spwm_data[n] * amplitude) >> 6;
+		tmp = ((unsigned long)spwm_data[n] * spwm_amplitude) / SPWM_DATA_STEP;
 		spwm_a[n] = (unsigned char)tmp;
 		spwm_a[1023-n] = (unsigned char)tmp;
 	}
 	for (n=0; n < 512; n++) {
-		tmp = 0xff - (((unsigned long)spwm_data[n] * amplitude) >> 6);
+		tmp = 0xff - (((unsigned long)spwm_data[n] * spwm_amplitude) / SPWM_DATA_STEP);
 		spwm_b[n] = (unsigned char)tmp;
 		spwm_b[1023-n] = (unsigned char)tmp;
 	}
-
 }		/* -----  end of function wave_spwm_data_step  ----- */
 
 /* wave_spwm - output a spwm
@@ -163,7 +237,8 @@ void wave_spwm(void)
 	PWM_t pwm1;
 
 	/* sin wave data */
-	wave_spwm_data(1);
+	wave_spwm_load_data(200, 0);
+	wave_spwm_data();
 
 	/* Configure for GPIO */
     SysCtlPeripheralEnable(PWM_PIN_PERIPH);
@@ -180,7 +255,6 @@ void wave_spwm(void)
 	pwm1.out = PWM_OUT_0;
 	pwm1.outbit = PWM_OUT_0_BIT;
 	/* Configure for pwm interrupt */
-#if 1
 	pwm1.trig = PWM_INT_CNT_ZERO;
 	pwm1.intergen = PWM_INT_GEN_0;
 	pwm1.handler = pwm_spwm_handler;
@@ -191,9 +265,10 @@ void wave_spwm(void)
 	/* Configure the periority of interrupt */
 /* 	IntPrioritySet(INT_PWM0, 3);
  */
-#endif
+	/*
+	 * Initialize a timer to base wave
+	 */
 
-#if 1
 	/* Enable the peripherals */
     SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);
 
@@ -214,8 +289,73 @@ void wave_spwm(void)
 	IntPrioritySet(INT_TIMER2A, 0);
 
 	TimerEnable(timer.base, timer.ntimer);
-#endif
 }
+
+/* wave_spwm_double_init - initialize double wave to bridge
+ */
+void wave_spwm_double_init(int delay)
+{
+	PWM_t pwm;
+
+	/* Sin wave data */
+/* 	wave_spwm_data(1);
+ */
+	wave_spwm_load_data(200, 0);
+	wave_spwm_double_data();
+
+
+	/* Configure pwm counter */
+	pwm.gpio_periph = PWM0_PERIPH;
+	pwm.gpio_base = PWM0_PORT;
+	pwm.gpio = PWM0_PIN;
+	pwm.gen = PWM_GEN_0;
+	/* configure pwm1 */
+	pwm.config = PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC;
+	pwm.period = 0xff;
+	pwm.width = pwm.period / 2;
+	pwm.out = PWM_OUT_0;
+	pwm.outbit = PWM_OUT_0_BIT;
+	pwm.handler = 0;
+	PWM_init(&pwm);
+
+	/* configure pwm2 */
+	pwm.gpio_periph = PWM1_PERIPH;
+	pwm.gpio_base = PWM1_PORT;
+	pwm.gpio = PWM1_PIN;
+	pwm.gen = PWM_GEN_0;
+	pwm.config = PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC;
+	pwm.period = 0xff;
+	pwm.width = pwm.period / 2;
+	pwm.out = PWM_OUT_1;
+	pwm.outbit = PWM_OUT_1_BIT;
+	pwm.handler = 0;
+ 	PWM_init(&pwm);
+
+	/*
+	 * Initialize a timer to base wave
+	 */
+
+	/* Enable the peripherals */
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);
+
+	TIMER_t timer;
+	timer.base = TIMER2_BASE;
+	timer.ntimer = TIMER_A;
+	timer.config = TIMER_CFG_32_BIT_PER;
+/* 	timer.config = TIMER_CFG_A_CAP_TIME | TIMER_CFG_16_BIT_PAIR;
+ */
+	/* 50Hz */
+	timer.value = 580;
+	timer.interrupt = INT_TIMER2A;
+	timer.prescale = 0;
+	timer.intermod = TIMER_TIMA_TIMEOUT;
+	timer.handler = timer_spwm_double_handler;
+	TIMER_init(&timer);
+	/* Configure the periority of interrupt */
+	IntPrioritySet(INT_TIMER2A, 0);
+
+	TimerEnable(timer.base, timer.ntimer);
+}		/* -----  end of function wave_spwm_double_init  ----- */
 
 /* wave_spwm_load - load the timer interrupt value
  */

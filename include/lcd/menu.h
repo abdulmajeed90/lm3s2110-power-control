@@ -23,6 +23,11 @@ typedef struct {
 typedef struct {
 	unsigned int config;
 } MENU_INA_t;
+/* The data to spwm double */
+typedef struct {
+	unsigned int amplitude;
+	unsigned int delay;
+} MENU_SPWM_DOUBLE_t;
 /* The menu list */
 typedef struct {
 	void (*display)(int,void *);
@@ -38,5 +43,6 @@ extern void menu_list_clean(int page, void *para);
 extern void menu_init_parameter(int page, MENU_PARAMETER_t *para);
 extern void menu_init_wave(int page, MENU_WAVE_t *wave);
 extern void menu_init_ina(int page, MENU_INA_t *ina);
+extern void menu_init_spwm_double(int page, MENU_SPWM_DOUBLE_t *para);
 extern void menu_display(void);
 #endif /* __MENU_H__ */

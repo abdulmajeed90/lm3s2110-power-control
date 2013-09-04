@@ -45,10 +45,14 @@
 #define PWM_OU		GPIOPinWrite(PWM_PORT, PWM_PIN, 0xff)
 #define PWM_OD		GPIOPinWrite(PWM_PORT, PWM_PIN, 0)
 
+extern void wave_spwm_load_data(unsigned int amplitude, unsigned int delay);
+extern void wave_spwm_read_data(unsigned int *amplitude, unsigned int *delay);
 extern void wave_spwm(void);
-extern void wave_spwm_data(unsigned int amplitude);
-extern void wave_spwm_data_step(unsigned int amplitude);
+extern void wave_spwm_data(void);
+extern void wave_spwm_data_step(void);
+extern void wave_spwm_double_data(void);
 extern void wave_spwm_load(unsigned long value);
+extern void wave_spwm_double_init(int delay);
 
 extern void wave_pwm(unsigned long period1, unsigned long period2);
 extern void wave_pwm_value(unsigned long value);

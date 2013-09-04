@@ -15,9 +15,12 @@
 
 /* module */
 #define MODULE_SPWM
+/* #define MODULE_SPWM_DOUBLE
+ */
 /* #define MODULE_PWM
  */
-#define MODULE_LCD
+/* #define MODULE_LCD
+ */
 #define MODULE_PLL
 /* #define MODULE_ADS
  */
@@ -48,7 +51,7 @@
 #include "periph/dac_5618.h"
 #endif
 
-#if defined(MODULE_SPWM) | defined(MODULE_PWM)
+#if defined(MODULE_SPWM) | defined(MODULE_PWM) | defined(MODULE_SPWM_DOUBLE)
 #include "wave.h"
 #endif
 
@@ -215,9 +218,14 @@ int main(void)
 	menu_start();
 #endif
 
+#if defined(MODULE_SPWM) | defined(MODULE_SPWM_DOUBLE)
 #ifdef MODULE_SPWM
 #include "src/pwm.h"
 	wave_spwm();
+#endif
+#ifdef MODULE_SPWM_DOUBLE
+	wave_spwm_double_init(0);
+#endif
 #ifdef MODULE_CAP
 	wave_interrupt_init(0xffff, timer_interrupt_handler);
 	/* 	wave_capture(timer_capture_handler); */
@@ -259,12 +267,16 @@ int main(void)
 
 	menu_wave.frequency = 1000;
 	menu_init_wave(1, &menu_wave);
-
 #endif
 #ifdef MODULE_INA209
 	MENU_INA_t menu_ina;
 
 	menu_init_ina(1, &menu_ina);
+#endif
+#ifdef MODULE_SPWM_DOUBLE
+	MENU_SPWM_DOUBLE_t menu_spwm;
+
+	menu_init_spwm_double(3, &menu_spwm);
 #endif
 #endif
 
@@ -322,8 +334,6 @@ int main(void)
  * 		wave_spwm_load((tmp1+tmp2)/42);
  */
 		wave_spwm_load((tmp1+tmp2)/64);
-
-
 
 #endif
 #endif
