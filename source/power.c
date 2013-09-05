@@ -14,13 +14,12 @@
 #include "src/gpio.h"
 
 /* module */
-#define MODULE_SPWM
-/* #define MODULE_SPWM_DOUBLE
+/* #define MODULE_SPWM
  */
+#define MODULE_SPWM_DOUBLE
 /* #define MODULE_PWM
  */
-/* #define MODULE_LCD
- */
+#define MODULE_LCD
 #define MODULE_PLL
 /* #define MODULE_ADS
  */
@@ -282,7 +281,7 @@ int main(void)
 
 	while(1) {
 #ifdef MODULE_DAC_5618
-		unsigned short int i = 0;
+		unsigned long int i = 0;
 
 		DAC_write_data(i++, 0);
 		DAC_write_data(i++, 1);
@@ -297,13 +296,17 @@ int main(void)
 		for (count = 5; count; count--)
 			ads_value = ads_read(1);
 
+#ifdef MODULE_LCD
 		menu_para.voltage = ads_voltage(ads_value);
+#endif
 
 		/* ADS channel 1 */
 		for (count = 5; count; count--)
 			ads_value = ads_read(2);
 
+#ifdef MODULE_LCD
 		menu_para.current = ads_current(ads_value);
+#endif
 
 		/* ADS channel 1 */
 		/* 		for (count = 10; count; count--)
@@ -328,13 +331,15 @@ int main(void)
 		timer_cap[TIMER_VALUE_DEEPIN+1] = (tmp1>tmp2?tmp1:tmp2);
 
 
-#ifdef MODULE_SPWM
+#if defined(MODULE_SPWM) | defined(MODULE_SPWM_DOUBLE)
 		/* Sync spwm period with input */
 /* 		wave_spwm_load((tmp1+tmp2)/85);
  * 		wave_spwm_load((tmp1+tmp2)/42);
  */
-		wave_spwm_load((tmp1+tmp2)/64);
-
+/* 		wave_spwm_load((tmp1+tmp2)/64);
+ */
+		wave_spwm_load((timer_cap[TIMER_VALUE_DEEPIN]+
+					timer_cap[TIMER_VALUE_DEEPIN+1])/32);
 #endif
 #endif
 

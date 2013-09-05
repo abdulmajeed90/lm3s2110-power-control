@@ -97,8 +97,8 @@ void time_spwm_handler(void)
 		/* Output postive period */
 		wave_flag=1;
 		/* Close timer */
-/* 		TimerDisable(TIMER2_BASE, TIMER_A);
- */
+		TimerDisable(TIMER2_BASE, TIMER_A);
+
 		/* Reloade wave phase */
 		spwm_phase_a = PHASE;
 		spwm_phase_b = PHASE;
@@ -113,13 +113,21 @@ void timer_spwm_double_handler(void)
 
 	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
 
-	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_a[i]+0x10);
-	PWMPulseWidthSet(PWM_BASE, PWM_OUT_1, spwm_b[SPWM_DATA_BUFFER_DEEPIN-1-i]+0x10);
+	if (spwm_reset == 1) {
+		i=0;
+		spwm_reset=0;
+	}
+
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_a[i]);
+	PWMPulseWidthSet(PWM_BASE, PWM_OUT_1, spwm_b[SPWM_DATA_BUFFER_DEEPIN-1-i]);
 
 	i+=spwm_step;
 	if (i >= SPWM_DATA_BUFFER_DEEPIN) {
 		i = 0;
 	}
+	/* Close timer */
+/* 	TimerDisable(TIMER1_BASE, TIMER_A);
+ */
 }		/* -----  end of function timer_spwm_double_handler  ----- */
 
 /* wave_spwm_load_data -
@@ -181,14 +189,17 @@ void wave_spwm_data(void)
 
 /* wave_spwm_double_data -
  */
+#define WAVE_COMPLETE
+#define DEAD_WIDTH	5
 void wave_spwm_double_data(void)
 {
 	int n;
 	unsigned long tmp;
 
-	memset(spwm_a, 0, sizeof (spwm_a));
+	memset(spwm_a, 0xff, sizeof (spwm_a));
 	memset(spwm_b, 0, sizeof (spwm_b));
 
+#ifdef	WAVE_COMPLETE
 	/* The channel 1 data */
 	for (n=0; n < 512; n++) {
 		tmp = ((unsigned long)spwm_data[n] * spwm_amplitude) / SPWM_DATA_STEP / 2;
@@ -208,6 +219,24 @@ void wave_spwm_double_data(void)
 		spwm_b[(1024+spwm_delay+n)%2048] = 0x7f-(unsigned char)tmp;
 		spwm_b[(2047+spwm_delay-n)%2048] = 0x7f-(unsigned char)tmp;
 	}
+#else
+	/* The channel 1 data */
+	for (n=0; n < 512; n++) {
+		tmp = ((unsigned long)spwm_data[n] * spwm_amplitude) / SPWM_DATA_STEP;
+		if (n>DEAD_WIDTH) {
+			spwm_a[n+spwm_delay] = (unsigned char)tmp;
+			spwm_a[1023+spwm_delay-n] = (unsigned char)tmp;
+		}
+	}
+	/* The channel 2 data */
+	for (n=0; n < 512; n++) {
+		tmp = ((unsigned long)spwm_data[n] * spwm_amplitude) / SPWM_DATA_STEP;
+		if (n>DEAD_WIDTH) {
+			spwm_b[n+spwm_delay] = (unsigned char)tmp;
+			spwm_b[1023+spwm_delay-n] = (unsigned char)tmp;
+		}
+	}
+#endif
 }		/* -----  end of function wave_spwm_double_data  ----- */
 
 /* wave_spwm_data_step - initialize the sin data with amplitude with step
