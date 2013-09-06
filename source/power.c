@@ -16,14 +16,17 @@
 /* module */
 /* #define MODULE_SPWM
  */
-#define MODULE_SPWM_DOUBLE
+/* #define MODULE_SPWM_DOUBLE
+ */
 /* #define MODULE_PWM
  */
-#define MODULE_LCD
+/* #define MODULE_LCD
+ */
 #define MODULE_PLL
 /* #define MODULE_ADS
  */
-#define MODULE_CAP
+/* #define MODULE_CAP
+ */
 /* #define MODULE_DAC_5618 */
 /* #define MODULE_INA209
  */
@@ -196,7 +199,9 @@ void jtag_wait(void)
 int main(void)
 {
 	unsigned int count=0;
-	/* int i=0; */
+	unsigned int i=0, j=0;
+	unsigned int temp_spwm_counter_step=60;
+	int pflag=0, nflag=0;
 
 	jtag_wait();
 
@@ -280,6 +285,33 @@ int main(void)
 #endif
 #endif
 
+#if 1
+#include <string.h>
+#include "hw_ints.h"
+#include "hw_memmap.h"
+#include "hw_types.h"
+#include "src/sysctl.h"
+#include "src/debug.h"
+#include "src/interrupt.h"
+#include "src/sysctl.h"
+#include "src/timer.h"
+#include "src/gpio.h"
+#include "src/pwm.h"
+#include "src/pin_map.h"
+#include "wave.h"
+
+
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    SysCtlPeripheralEnable(PWM0_PERIPH);
+    SysCtlPeripheralEnable(PWM0_PERIPH);
+	SysCtlPeripheralEnable(WAVE_INT_PPER);
+
+	GPIOPinTypeGPIOOutput(PWM0_PORT, PWM0_PIN);
+	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_5);
+	GPIOPinTypeGPIOOutput(PWM1_PORT, PWM1_PIN);
+	GPIOPinTypeGPIOInput(WAVE_INT_PBASE, WAVE_SCAN_PIN);
+#endif
+
 	while(1) {
 #ifdef MODULE_DAC_5618
 		unsigned long int i = 0;
@@ -342,17 +374,145 @@ int main(void)
 /* 		wave_spwm_load((timer_cap[TIMER_VALUE_DEEPIN]+
  * 					timer_cap[TIMER_VALUE_DEEPIN+1])/32);
  */
-		wave_spwm_load((tmp1+tmp2)/256);
+/* 		wave_spwm_load((tmp1+tmp2)/256);
+ */
+
 #endif
 #endif
 
 #ifdef MODULE_LCD
+extern unsigned int temp_spwm_counter;
 		/* load value to follower wave */
 		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN];
 		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1];
 
 		/* Display the screen */
 		menu_display();
+#endif
+
+#if 1
+
+#define SPWM_STEP	16
+#include "wave.h"
+#include "src/pin_map.h"
+
+
+		if (WAVE_SCAN) {
+			pflag=1;
+			/* if new period */
+			if (nflag == 1) {
+				nflag = 0;
+				temp_spwm_counter_step=i/SPWM_STEP*2;
+				i=0;
+			}
+			i++;
+			/* Configure switch level
+			 * P0 low and P1 high.
+			 */
+			switch (i%SPWM_STEP) {
+				/* P0 P1 high */
+				/* P0 and P1 low(...) */
+				case 0: 
+				case 2: 
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+					break;
+				case 4:
+				case 6:
+					if (i>temp_spwm_counter_step &&
+							i<(SPWM_STEP/2-1)*temp_spwm_counter_step) {
+						GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+					}
+					break;
+
+				case 8:
+				case 10:
+					if (i>2*temp_spwm_counter_step &&
+							i<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
+						GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+					}
+
+				case 12:
+				case 14:
+					if (i>3*temp_spwm_counter_step &&
+							i<(SPWM_STEP/2-3)*temp_spwm_counter_step) {
+						GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+					}
+					break;
+
+					/* free */
+				case 1:
+				case 3:
+				case 5:
+				case 7:
+				case 9:
+				case 11:
+				case 13:
+				case 15:
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, PWM1_PIN);
+					break;
+				default:
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, PWM1_PIN);
+					break;
+			}
+		} else {	/* Negative */
+			nflag = 1;
+			/* if negative period */
+			if (pflag == 1) {
+				pflag = 0;
+				temp_spwm_counter_step=j/SPWM_STEP*2;
+				j=0;
+			}
+			j++;
+			/* Configure switch level
+			 * P0 high and P1 low.
+			 */
+			switch (j%SPWM_STEP) {
+				/* P1 high */
+				/* P0 and P1 low(...) */
+				case 0:
+				case 2:
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+					break;
+				case 4:
+				case 6:
+					if (j>temp_spwm_counter_step &&
+							j<(SPWM_STEP/2-1)*temp_spwm_counter_step) {
+						GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+					}
+					break;
+				case 8:
+				case 10:
+					if (j>2*temp_spwm_counter_step &&
+							j<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
+						GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+					}
+					break;
+				case 12:
+				case 14:
+					if (j>3*temp_spwm_counter_step &&
+							j<(SPWM_STEP/2-3)*temp_spwm_counter_step) {
+						GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+					}
+					break;
+
+					/* free */
+				case 1:
+				case 3:
+				case 5:
+				case 7:
+				case 9:
+				case 11:
+				case 13:
+				case 15:
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, PWM0_PIN);
+					break;
+				default:
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, PWM0_PIN);
+					break;
+			}
+		}
+		/* Delay */
+		for (count=2; count; count--);
 #endif
 	}
 

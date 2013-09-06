@@ -132,16 +132,24 @@ void time_spwm_handler(void)
 
 /* timer_spwm_double_handler -
  */
+unsigned int temp_spwm_counter;
+/* #define SPWM_STEP	16
+ */
 void timer_spwm_double_handler(void)
 {
 	static unsigned int i=0;
+	static unsigned int temp_spwm_counter_step=60;
+	static int nflag=0;
 
 	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
 
-	if (spwm_reset == 1) {
-		i=0;
-		spwm_reset=0;
-	}
+/* 	if (spwm_reset == 1) {
+ * 		temp_spwm_counter=i;
+ * 		temp_spwm_counter_step=i/SPWM_STEP;
+ * 		i=0;
+ * 		spwm_reset=0;
+ * 	}
+ */
 #if 0
 
 	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_a[i]);
@@ -154,43 +162,165 @@ void timer_spwm_double_handler(void)
 	/* Positive */
 /* 	if (i < SPWM_DATA_BUFFER_DEEPIN/2) {
  */
+#if 0
 	if (WAVE_SCAN) {
+		/* if new period */
+		if (nflag == 1) {
+			nflag = 0;
+			temp_spwm_counter=i;
+			temp_spwm_counter_step=i/SPWM_STEP;
+			i=0;
+		}
 		/* Configure switch level
 		 * P0 low and P1 high.
 		 */
-		switch (i/spwm_step%4) {
-			case 0: /* P0 P1 high */
-			case 2: /* P0 and P1 low(...) */
-				GPIOPinWrite(PWM0_PORT, PWM0_PIN, 0x00);
-				GPIOPinWrite(PWM1_PORT, PWM1_PIN, 0x00);
-				GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_5, 0x00);
+		switch (i%SPWM_STEP) {
+			/* P0 P1 high */
+			/* P0 and P1 low(...) */
+			case 0: 
+			case 2: 
+				GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
 				break;
-			case 1: /* free */
-			case 3: /* free */
-				GPIOPinWrite(PWM0_PORT, PWM0_PIN, 0x00);
-				GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_5, 0xff);
-				GPIOPinWrite(PWM1_PORT, PWM1_PIN, 0xff);
+			case 4:
+/* 				if (i>(SPWM_STEP/2+1)*temp_spwm_counter_step - temp_spwm_counter_step/2 &&
+ * 						i<(SPWM_STEP-1)*temp_spwm_counter_step + temp_spwm_counter_step/2) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+			case 6:
+				if (i>(SPWM_STEP/2+1)*temp_spwm_counter_step &&
+						i<(SPWM_STEP-1)*temp_spwm_counter_step) {
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+				}
+				break;
+
+			case 8:
+/* 				if (i>(SPWM_STEP/2+2)*temp_spwm_counter_step - temp_spwm_counter_step/2 &&
+ * 						i<(SPWM_STEP-2)*temp_spwm_counter_step + temp_spwm_counter_step/2) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+			case 10:
+/* 				if (i>(SPWM_STEP/2+2)*temp_spwm_counter_step && i<(SPWM_STEP-2)*temp_spwm_counter_step) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+				if (i>(SPWM_STEP/2+1)*temp_spwm_counter_step &&
+						i<(SPWM_STEP-1)*temp_spwm_counter_step) {
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+				}
+
+			case 12:
+/* 				if (i>(SPWM_STEP/2+3)*temp_spwm_counter_step - temp_spwm_counter_step/2 &&
+ * 						i<(SPWM_STEP-3)*temp_spwm_counter_step + temp_spwm_counter_step/2) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+			case 14:
+/* 				if (i>(SPWM_STEP/2+3)*temp_spwm_counter_step && i<(SPWM_STEP-3)*temp_spwm_counter_step) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 					break;
+ * 				}
+ */
+				if (i>(SPWM_STEP/2+2)*temp_spwm_counter_step && i<(SPWM_STEP-2)*temp_spwm_counter_step) {
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+				}
+				break;
+
+			/* free */
+			case 1:
+			case 3:
+			case 5:
+			case 7:
+			case 9:
+			case 11:
+			case 13:
+			case 15:
+			default:
+				GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, PWM1_PIN);
 				break;
 		}
 	} else {	/* Negative */
+		nflag = 1;
 		/* Configure switch level
 		 * P0 high and P1 low.
 		 */
-		switch (i/spwm_step%4) {
-			case 0: /* P1 high */
-			case 2: /* P0 and P1 low(...) */
-				GPIOPinWrite(PWM0_PORT, PWM0_PIN, 0x00);
-				GPIOPinWrite(PWM1_PORT, PWM1_PIN, 0x00);
-				GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_5, 0x00);
+		switch (i%SPWM_STEP) {
+			/* P1 high */
+			/* P0 and P1 low(...) */
+			case 0:
+			case 2:
+				GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
 				break;
-			case 1: /* free */
-			case 3: /* x */
-				GPIOPinWrite(PWM0_PORT, PWM0_PIN, 0xff);
-				GPIOPinWrite(PWM1_PORT, PWM1_PIN, 0x00);
-				GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_5, 0x00);
+			case 4:
+/* 				if (i>temp_spwm_counter_step - temp_spwm_counter_step/2 &&
+ * 						i<(SPWM_STEP/2-1)*temp_spwm_counter_step + temp_spwm_counter_step/2) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+			case 6:
+				if (i>temp_spwm_counter_step && i<(SPWM_STEP/2-1)*temp_spwm_counter_step) {
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+				}
+				break;
+
+			case 8:
+/* 				if (i>2*temp_spwm_counter_step - temp_spwm_counter_step/2 &&
+ * 						i<(SPWM_STEP/2-2)*temp_spwm_counter_step + temp_spwm_counter_step/2) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+			case 10:
+/* 				if (i>2*temp_spwm_counter_step && i<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+				if (i>temp_spwm_counter_step && i<(SPWM_STEP/2-1)*temp_spwm_counter_step) {
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+				}
+				break;
+
+			case 12:
+
+/* 				if (i>3*temp_spwm_counter_step - temp_spwm_counter_step/2 &&
+ * 						i<(SPWM_STEP/2-3)*temp_spwm_counter_step + temp_spwm_counter_step/2) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+			case 14:
+/* 				if (i>3*temp_spwm_counter_step && i<(SPWM_STEP/2-3)*temp_spwm_counter_step) {
+ * 					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+ * 				}
+ * 				break;
+ */
+				if (i>(SPWM_STEP/2+2)*temp_spwm_counter_step && i<(SPWM_STEP-2)*temp_spwm_counter_step) {
+					GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, 0x00);
+				}
+				break;
+
+			 /* free */
+			case 1:
+			case 3:
+			case 5:
+			case 7:
+			case 9:
+			case 11:
+			case 13:
+			case 15:
+			default:
+				GPIOPinWrite(PWM0_PORT, PWM0_PIN | PWM1_PIN, PWM0_PIN);
 				break;
 		}
 	}
+#endif
 
 #if 0
 	/*
@@ -276,10 +406,10 @@ void timer_spwm_double_handler(void)
 #endif
 #endif
 
-	i+=spwm_step;
-
-/* 	i++;
+/* 	i+=spwm_step;
  */
+	i++;
+
 	if (i >= SPWM_DATA_BUFFER_DEEPIN) {
 		i = 0;
 	}
