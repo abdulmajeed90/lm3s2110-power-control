@@ -218,18 +218,19 @@ int main(void)
 #endif
 
 #if defined(MODULE_SPWM) | defined(MODULE_SPWM_DOUBLE)
-#ifdef MODULE_SPWM
-#include "src/pwm.h"
-	wave_spwm();
-#endif
-#ifdef MODULE_SPWM_DOUBLE
-	wave_spwm_double_init(0);
-#endif
 #ifdef MODULE_CAP
 	wave_interrupt_init(0xffff, timer_interrupt_handler);
 	/* 	wave_capture(timer_capture_handler); */
 	wave_cap32(timer_cap32_handler);
 #endif
+
+#ifdef MODULE_SPWM
+#include "src/pwm.h"
+	wave_spwm();
+#elif defined(MODULE_SPWM_DOUBLE)
+	wave_spwm_double_init(0);
+#endif
+
 #endif
 
 #ifdef MODULE_PWM
@@ -338,8 +339,10 @@ int main(void)
  */
 /* 		wave_spwm_load((tmp1+tmp2)/64);
  */
-		wave_spwm_load((timer_cap[TIMER_VALUE_DEEPIN]+
-					timer_cap[TIMER_VALUE_DEEPIN+1])/32);
+/* 		wave_spwm_load((timer_cap[TIMER_VALUE_DEEPIN]+
+ * 					timer_cap[TIMER_VALUE_DEEPIN+1])/32);
+ */
+		wave_spwm_load((tmp1+tmp2)/256);
 #endif
 #endif
 

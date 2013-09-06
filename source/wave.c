@@ -30,7 +30,7 @@ unsigned char spwm_a[SPWM_DATA_BUFFER_DEEPIN] = {0};
 unsigned char spwm_b[SPWM_DATA_BUFFER_DEEPIN] = {0};
 /* unsigned char spwm_step=12; */
 /* unsigned char spwm_step=24; */
-unsigned char spwm_step=32;
+unsigned char spwm_step=8;
 /* unsigned char spwm_step=3;
  */
 unsigned char spwm_value=0xf;
@@ -142,7 +142,7 @@ void timer_spwm_double_handler(void)
 		i=0;
 		spwm_reset=0;
 	}
-#if 1
+#if 0
 
 	PWMPulseWidthSet(PWM_BASE, PWM_OUT_0, spwm_a[i]);
 	PWMPulseWidthSet(PWM_BASE, PWM_OUT_1, spwm_b[SPWM_DATA_BUFFER_DEEPIN-1-i]);
@@ -151,10 +151,55 @@ void timer_spwm_double_handler(void)
 	/*
 	 * The channel switch
 	 */
+	/* Positive */
+/* 	if (i < SPWM_DATA_BUFFER_DEEPIN/2) {
+ */
+	if (WAVE_SCAN) {
+		/* Configure switch level
+		 * P0 low and P1 high.
+		 */
+		switch (i/spwm_step%4) {
+			case 0: /* P0 P1 high */
+			case 2: /* P0 and P1 low(...) */
+				GPIOPinWrite(PWM0_PORT, PWM0_PIN, 0x00);
+				GPIOPinWrite(PWM1_PORT, PWM1_PIN, 0x00);
+				GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_5, 0x00);
+				break;
+			case 1: /* free */
+			case 3: /* free */
+				GPIOPinWrite(PWM0_PORT, PWM0_PIN, 0x00);
+				GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_5, 0xff);
+				GPIOPinWrite(PWM1_PORT, PWM1_PIN, 0xff);
+				break;
+		}
+	} else {	/* Negative */
+		/* Configure switch level
+		 * P0 high and P1 low.
+		 */
+		switch (i/spwm_step%4) {
+			case 0: /* P1 high */
+			case 2: /* P0 and P1 low(...) */
+				GPIOPinWrite(PWM0_PORT, PWM0_PIN, 0x00);
+				GPIOPinWrite(PWM1_PORT, PWM1_PIN, 0x00);
+				GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_5, 0x00);
+				break;
+			case 1: /* free */
+			case 3: /* x */
+				GPIOPinWrite(PWM0_PORT, PWM0_PIN, 0xff);
+				GPIOPinWrite(PWM1_PORT, PWM1_PIN, 0x00);
+				GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_5, 0x00);
+				break;
+		}
+	}
+
+#if 0
+	/*
+	 * The channel switch
+	 */
 	if (i < SPWM_DATA_BUFFER_DEEPIN/2) { /* Positive */
 		/* Configure switch level in low */
 		PWMGenConfigure(PWM_BASE, PWM_GEN_0,
-				PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+ | PWM_GEN_MODE_NO_SYNC);
 		switch (i/spwm_step%8) {
 			case 0: /* P0 P1 */
 /* 				GPIOPinTypePWM(PWM0_PORT, PWM0_PIN);
@@ -229,8 +274,12 @@ void timer_spwm_double_handler(void)
 		}
 	}
 #endif
+#endif
 
 	i+=spwm_step;
+
+/* 	i++;
+ */
 	if (i >= SPWM_DATA_BUFFER_DEEPIN) {
 		i = 0;
 	}
@@ -434,6 +483,7 @@ void wave_spwm(void)
  */
 void wave_spwm_double_init(int delay)
 {
+#if 0
 	PWM_t pwm1;
 	PWM_t pwm2;
 
@@ -470,6 +520,18 @@ void wave_spwm_double_init(int delay)
 	pwm2.outbit = PWM_OUT_1_BIT;
 	pwm2.handler = 0;
  	PWM_init(&pwm2);
+#else
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    SysCtlPeripheralEnable(PWM0_PERIPH);
+    SysCtlPeripheralEnable(PWM0_PERIPH);
+	SysCtlPeripheralEnable(WAVE_INT_PPER);
+
+	GPIOPinTypeGPIOOutput(PWM0_PORT, PWM0_PIN);
+	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_5);
+	GPIOPinTypeGPIOOutput(PWM1_PORT, PWM1_PIN);
+	GPIOPinTypeGPIOInput(WAVE_INT_PBASE, WAVE_SCAN_PIN);
+	
+#endif
 
 	/*
 	 * Initialize a timer to base wave
