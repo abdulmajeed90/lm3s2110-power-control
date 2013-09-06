@@ -137,9 +137,10 @@ unsigned int temp_spwm_counter;
  */
 void timer_spwm_double_handler(void)
 {
-	static unsigned int i=0;
-	static unsigned int temp_spwm_counter_step=60;
-	static int nflag=0;
+/* 	static unsigned int i=0;
+ * 	static unsigned int temp_spwm_counter_step=60;
+ * 	static int nflag=0;
+ */
 
 	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
 
@@ -408,11 +409,12 @@ void timer_spwm_double_handler(void)
 
 /* 	i+=spwm_step;
  */
-	i++;
-
-	if (i >= SPWM_DATA_BUFFER_DEEPIN) {
-		i = 0;
-	}
+/* 	i++;
+ * 
+ * 	if (i >= SPWM_DATA_BUFFER_DEEPIN) {
+ * 		i = 0;
+ * 	}
+ */
 	/* Close timer */
 /* 	TimerDisable(TIMER1_BASE, TIMER_A);
  */
