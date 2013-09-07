@@ -459,7 +459,7 @@ extern unsigned int temp_spwm_counter;
 
 #endif
 
-#define COUNT_DELAY 20
+#define COUNT_DELAY 60
 /* 		if (wave_form_out) {
  */
 		if (WAVE_SCAN) {
@@ -551,7 +551,7 @@ extern unsigned int temp_spwm_counter;
 				if (i%SPWM_STEP < 8)
 					for (count=1*COUNT_DELAY; count; count--);
 				else
-					for (count=3*COUNT_DELAY; count; count--);
+					for (count=2*COUNT_DELAY; count; count--);
 				GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_1);
 			}
 		} else {	/* Negative */
@@ -639,7 +639,7 @@ extern unsigned int temp_spwm_counter;
 				if (i%SPWM_STEP < 8)
 					for (count=1*COUNT_DELAY; count; count--);
 				else
-					for (count=3*COUNT_DELAY; count; count--);
+					for (count=2*COUNT_DELAY; count; count--);
 				GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_0);
 			}
 		}
