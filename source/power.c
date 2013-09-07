@@ -459,7 +459,7 @@ extern unsigned int temp_spwm_counter;
 
 #endif
 
-#define COUNT_DELAY 15
+#define COUNT_DELAY 20
 /* 		if (wave_form_out) {
  */
 		if (WAVE_SCAN) {
@@ -479,52 +479,62 @@ extern unsigned int temp_spwm_counter;
 				/* P0 and P1 low(...) */
 				case 0: /* 1,1 */
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
+						break;
 				case 2: 
 				case 4: /* 3,2 */
-					if (i>2*temp_spwm_counter_step &&
+/* 					if (i>2*temp_spwm_counter_step &&
+ * 							i<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
+ * 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
+ * 					}
+ * 					break;
+ */
+						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
+						break;
+				case 6:
+				case 8:
+					if (i>0*temp_spwm_counter_step &&
 							i<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
-				case 6:
-				case 8:
+
 				case 10: /* 6,3 */
-					if (i>3*temp_spwm_counter_step &&
-							i<(SPWM_STEP/2-3)*temp_spwm_counter_step) {
+					if (i>0*temp_spwm_counter_step &&
+							i<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 12:
 				case 14:
 				case 16: /* 9,4 */
-					if (i>4*temp_spwm_counter_step &&
-							i<(SPWM_STEP/2-4)*temp_spwm_counter_step) {
+					if (i>1*temp_spwm_counter_step &&
+							i<(SPWM_STEP/2-3)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 18:
 				case 20: /* 11,5 */
-					if (i>5*temp_spwm_counter_step &&
+					if (i>3*temp_spwm_counter_step &&
 							i<(SPWM_STEP/2-5)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 22:
 				case 24: /* 13,6 */
-					if (i>(6*temp_spwm_counter_step) &&
-							i<(SPWM_STEP/2-6)*temp_spwm_counter_step) {
+					if (i>(3*temp_spwm_counter_step) &&
+							i<(SPWM_STEP/2-5)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 26:
 				case 28: /* 15,7 */
-					if (i>(7*temp_spwm_counter_step) &&
+					if (i>(5*temp_spwm_counter_step) &&
 							i<(SPWM_STEP/2-7)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 30: /* 16, 8 */
-					if (i>(8*temp_spwm_counter_step) &&
+					if (i>(6*temp_spwm_counter_step) &&
 							i<(SPWM_STEP/2-8)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
@@ -538,7 +548,10 @@ extern unsigned int temp_spwm_counter;
 					break;
 			}
 			if (i%SPWM_STEP%2==0) {
-				for (count=COUNT_DELAY; count; count--);
+				if (i%SPWM_STEP < 8)
+					for (count=1*COUNT_DELAY; count; count--);
+				else
+					for (count=1*COUNT_DELAY; count; count--);
 				GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_1);
 			}
 		} else {	/* Negative */
@@ -555,53 +568,61 @@ extern unsigned int temp_spwm_counter;
 			 */
 			switch (j%SPWM_STEP) {
 				case 0: /* 1,1 */
-						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 				case 2: 
 				case 4: /* 3,2 */
-					if (j>2*temp_spwm_counter_step &&
+/* 					if (j>2*temp_spwm_counter_step &&
+ * 							j<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
+ * 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
+ * 					}
+ * 					break;
+ */
+						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
+						break;
+				case 6:
+				case 8:
+					if (j>0*temp_spwm_counter_step &&
 							j<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
-				case 6:
-				case 8:
+
 				case 10: /* 6,3 */
-					if (j>3*temp_spwm_counter_step &&
-							j<(SPWM_STEP/2-3)*temp_spwm_counter_step) {
+					if (j>0*temp_spwm_counter_step &&
+							j<(SPWM_STEP/2-2)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 12:
 				case 14:
 				case 16: /* 9,4 */
-					if (j>4*temp_spwm_counter_step &&
-							j<(SPWM_STEP/2-4)*temp_spwm_counter_step) {
+					if (j>1*temp_spwm_counter_step &&
+							j<(SPWM_STEP/2-3)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 18:
 				case 20: /* 11,5 */
-					if (j>5*temp_spwm_counter_step &&
+					if (j>3*temp_spwm_counter_step &&
 							j<(SPWM_STEP/2-5)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 22:
 				case 24: /* 13,6 */
-					if (j>(6*temp_spwm_counter_step) &&
-							j<(SPWM_STEP/2-6)*temp_spwm_counter_step) {
+					if (j>(3*temp_spwm_counter_step) &&
+							j<(SPWM_STEP/2-5)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 26:
 				case 28: /* 15,7 */
-					if (j>(7*temp_spwm_counter_step) &&
+					if (j>(5*temp_spwm_counter_step) &&
 							j<(SPWM_STEP/2-7)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
 					break;
 				case 30: /* 16, 8 */
-					if (j>(8*temp_spwm_counter_step) &&
+					if (j>(6*temp_spwm_counter_step) &&
 							j<(SPWM_STEP/2-8)*temp_spwm_counter_step) {
 						GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0x00);
 					}
@@ -615,7 +636,10 @@ extern unsigned int temp_spwm_counter;
 					break;
 			}
 			if (j%SPWM_STEP%2 == 0) {
-				for (count=COUNT_DELAY; count; count--);
+				if (i%SPWM_STEP < 8)
+					for (count=1*COUNT_DELAY; count; count--);
+				else
+					for (count=8*COUNT_DELAY; count; count--);
 				GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_0);
 			}
 		}
