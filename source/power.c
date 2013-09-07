@@ -366,7 +366,7 @@ int main(void)
  * 			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0x00);
  */
 
-		if (menu_para.current >= 1000 || menu_para.voltage >= 10000) {
+		if (menu_para.current >= 2500 || menu_para.voltage >= 30000) {
  			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0xff);
 		} else {
  			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0x00);
