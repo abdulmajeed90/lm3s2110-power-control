@@ -20,13 +20,11 @@
  */
 /* #define MODULE_PWM
  */
-/* #define MODULE_LCD
- */
+#define MODULE_LCD
 #define MODULE_PLL
-/* #define MODULE_ADS
- */
-/* #define MODULE_CAP
- */
+#define MODULE_ADS
+#define MODULE_CAP
+
 /* #define MODULE_DAC_5618 */
 /* #define MODULE_INA209
  */
@@ -199,10 +197,10 @@ void jtag_wait(void)
 int main(void)
 {
 	unsigned int count=0;
-	unsigned int i=0, j=0;
-	unsigned int temp_spwm_counter_step=60;
-	int pflag=0, nflag=0;
-
+/* 	unsigned int i=0, j=0;
+ * 	unsigned int temp_spwm_counter_step=60;
+ * 	int pflag=0, nflag=0;
+ */
 	jtag_wait();
 
 #ifdef MODULE_PLL
@@ -265,13 +263,13 @@ int main(void)
 #ifdef MODULE_ADS
 	MENU_PARAMETER_t menu_para;
 
-	menu_init_parameter(2, &menu_para);
+	menu_init_parameter(1, &menu_para);
 #endif
 #ifdef MODULE_CAP
 	MENU_WAVE_t menu_wave;
 
 	menu_wave.frequency = 1000;
-	menu_init_wave(1, &menu_wave);
+	menu_init_wave(2, &menu_wave);
 #endif
 #ifdef MODULE_INA209
 	MENU_INA_t menu_ina;
@@ -285,7 +283,7 @@ int main(void)
 #endif
 #endif
 
-#if 1
+#if 0
 #include <string.h>
 #include "hw_ints.h"
 #include "hw_memmap.h"
@@ -381,7 +379,6 @@ int main(void)
 #endif
 
 #ifdef MODULE_LCD
-extern unsigned int temp_spwm_counter;
 		/* load value to follower wave */
 		menu_wave.period1 = timer_cap[TIMER_VALUE_DEEPIN];
 		menu_wave.period2 = timer_cap[TIMER_VALUE_DEEPIN+1];
@@ -390,8 +387,9 @@ extern unsigned int temp_spwm_counter;
 		menu_display();
 #endif
 
-#if 1
+#if 0
 
+extern unsigned int temp_spwm_counter;
 #define SPWM_STEP	16
 #include "wave.h"
 #include "src/pin_map.h"
