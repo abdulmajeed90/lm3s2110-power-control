@@ -24,7 +24,7 @@
 #define MODULE_PLL
 #define MODULE_ADS
 #define MODULE_CAP
-
+#define MODULE_PROTECT
 /* #define MODULE_DAC_5618 */
 /* #define MODULE_INA209
  */
@@ -32,12 +32,18 @@
 #ifdef MODULE_ADS
 #include "periph/ads1115.h"
 
-#define ads_a1	1538
-#define ads_a2	20270000
+/* #define ads_a1	1538
+ * #define ads_a2	20270000
+ */
+#define ads_a1	4858
+#define ads_a2	64940000
 #define ads_current(x)	(((x)*ads_a1 - ads_a2)/10000)
 
-#define ads_v1	1384
-#define ads_v2	3055
+/* #define ads_v1	1384
+ * #define ads_v2	3055
+ */
+#define ads_v1	779
+#define ads_v2  3115
 #define ads_voltage(x)	(((x)*ads_v1 + ads_v2)/1000)
 #endif
 
@@ -283,6 +289,11 @@ int main(void)
 #endif
 #endif
 
+#ifdef MODULE_PROTECT
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH);
+	GPIOPinTypeGPIOOutput(GPIO_PORTH_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+#endif
+
 #if 0
 #include <string.h>
 #include "hw_ints.h"
@@ -329,6 +340,15 @@ int main(void)
 
 #ifdef MODULE_LCD
 		menu_para.voltage = ads_voltage(ads_value);
+/* 		menu_para.voltage = ads_value;
+ */
+#ifdef MODULE_PROTECT
+/* 		if (menu_para.voltage >= 10000)
+ * 			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0xff);
+ * 		else
+ * 			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0x00);
+ */
+#endif
 #endif
 
 		/* ADS channel 1 */
@@ -337,6 +357,22 @@ int main(void)
 
 #ifdef MODULE_LCD
 		menu_para.current = ads_current(ads_value);
+/* 		menu_para.current = ads_value;
+ */
+#ifdef MODULE_PROTECT
+/* 		if (menu_para.current >= 1000)
+ * 			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0xff);
+ * 		else
+ * 			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0x00);
+ */
+
+		if (menu_para.current >= 1000 || menu_para.voltage >= 10000) {
+ 			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0xff);
+		} else {
+ 			GPIOPinWrite(GPIO_PORTH_BASE, GPIO_PIN_0|GPIO_PIN_1, 0x00);
+		}
+
+#endif
 #endif
 
 		/* ADS channel 1 */
